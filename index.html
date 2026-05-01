@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -134,7 +135,6 @@
       cursor: pointer;
     }
 
-    /* NOVO */
     .add-link-btn {
       margin-top: 5px;
       background: #8a2eff;
@@ -177,7 +177,6 @@
     <input id="name" placeholder="Nome do jogo">
     <input id="desc" placeholder="Descrição">
 
-    <!-- LINKS DINÂMICOS -->
     <div id="linksContainer">
       <input class="link-input" placeholder="Link">
     </div>
@@ -192,18 +191,23 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
   authDomain: "new-way-community.firebaseapp.com",
   databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
-  projectId: "new-way-community"
+  projectId: "new-way-community",
+  storageBucket: "new-way-community.firebasestorage.app",
+  messagingSenderId: "165462675701",
+  appId: "1:165462675701:web:2d1312c284461d5808f5bc",
+  measurementId: "G-630ZEM4FR4"
 };
 
 firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+
 const db = firebase.database();
 
 let games = [];
 let isAdmin = false;
-let editId = null;
 
 const gamesEl = document.getElementById("games");
 
