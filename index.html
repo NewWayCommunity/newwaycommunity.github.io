@@ -273,6 +273,10 @@ function renderGames() {
 }
 
 function saveGame() {
+  const name = document.getElementById("name").value;
+  const desc = document.getElementById("desc").value;
+  const category = document.getElementById("category").value;
+
   const links = Array.from(document.querySelectorAll(".link-input"))
     .map(i => i.value)
     .filter(v => v);
@@ -288,10 +292,10 @@ function saveGame() {
 
   reader.onload = function(e) {
     const data = {
-      name: name.value,
-      desc: desc.value,
-      links: links,
-      category: category.value,
+      name,
+      desc,
+      links,
+      category,
       banner: e.target.result,
       date: Date.now()
     };
