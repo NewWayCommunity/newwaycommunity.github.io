@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Way Community</title>
 
-  <!-- Firebase (versão compatível com seu código) -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #0d0d0d; color: white; }
-    header { padding: 20px; text-align: center; font-size: 24px; text-shadow: 0 0 10px #8a2eff; }
+    body { font-family: Arial; background: #0d0d0d; color: white; }
+
+    header {
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      text-shadow: 0 0 10px #8a2eff;
+    }
 
     .search-container {
       display: flex;
@@ -42,8 +48,8 @@
       background: #111;
       border-radius: 15px;
       overflow: hidden;
-      box-shadow: 0 0 15px rgba(138, 46, 255, 0.3);
       position: relative;
+      box-shadow: 0 0 15px rgba(138,46,255,0.3);
     }
 
     .card img {
@@ -91,7 +97,10 @@
       max-width: 400px;
     }
 
-    .modal input { width: 100%; margin: 10px 0; }
+    .modal input {
+      width: 100%;
+      margin: 10px 0;
+    }
 
     .modal button {
       width: 100%;
@@ -100,6 +109,7 @@
       border: none;
       border-radius: 8px;
       color: white;
+      cursor: pointer;
     }
 
     .admin-btn {
@@ -143,129 +153,145 @@
 </div>
 
 <script>
-  // 🔥 SEU FIREBASE (já configurado)
-  const firebaseConfig = {
-    apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
-    authDomain: "new-way-community.firebaseapp.com",
-    databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
-    projectId: "new-way-community",
-    storageBucket: "new-way-community.firebasestorage.app",
-    messagingSenderId: "165462675701",
-    appId: "1:165462675701:web:0b5a53ada33fad5808f5bc"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
+  authDomain: "new-way-community.firebaseapp.com",
+  databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
+  projectId: "new-way-community",
+  storageBucket: "new-way-community.firebasestorage.app",
+  messagingSenderId: "165462675701",
+  appId: "1:165462675701:web:0b5a53ada33fad5808f5bc"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  let games = [];
-  let isAdmin = false;
-  let editId = null;
+let games = [];
+let isAdmin = false;
+let editId = null;
 
-  const gamesEl = document.getElementById("games");
-  const searchInput = document.getElementById("search");
-  const categoryFilter = document.getElementById("categoryFilter");
+const gamesEl = document.getElementById("games");
+const searchInput = document.getElementById("search");
+const categoryFilter = document.getElementById("categoryFilter");
 
-  function renderGames() {
-    const search = searchInput.value.toLowerCase();
-    const category = categoryFilter.value;
+function renderGames() {
+  const search = searchInput.value.toLowerCase();
+  const category = categoryFilter.value;
 
-    gamesEl.innerHTML = "";
+  gamesEl.innerHTML = "";
 
-    games
-      .filter(g => g.name.toLowerCase().includes(search))
-      .filter(g => !category || g.category === category)
-      .sort((a,b)=> b.date - a.date)
-      .forEach(game => {
+  games
+    .filter(g => g.name.toLowerCase().includes(search))
+    .filter(g => !category || g.category === category)
+    .sort((a,b)=> b.date - a.date)
+    .forEach(game => {
 
-        const div = document.createElement("div");
-        div.className = "card";
+      const div = document.createElement("div");
+      div.className = "card";
 
-        div.innerHTML = `
-          ${isAdmin ? `<div class="actions">
-            <button onclick="editGame('${game.id}')">✏️</button>
-            <button onclick="deleteGame('${game.id}')">🗑️</button>
-          </div>` : ""}
-          <img src="${game.banner}">
-          <div class="card-content">
-            <h3>${game.name}</h3>
-            <p>${game.desc}</p>
-            <p><b>${game.category}</b></p>
-            <a href="${game.link}" target="_blank">Acessar</a>
-          </div>
-        `;
+      div.innerHTML = `
+        ${isAdmin ? `<div class="actions">
+          <button onclick="editGame('${game.id}')">✏️</button>
+          <button onclick="deleteGame('${game.id}')">🗑️</button>
+        </div>` : ""}
+        <img src="${game.banner}">
+        <div class="card-content">
+          <h3>${game.name}</h3>
+          <p>${game.desc}</p>
+          <p><b>${game.category}</b></p>
+          <a href="${game.link}" target="_blank">Acessar</a>
+        </div>
+      `;
 
-        gamesEl.appendChild(div);
-      });
-  }
-
-  function updateCategories() {
-    const categories = [...new Set(games.map(g => g.category))];
-    categoryFilter.innerHTML = '<option value=\"\">Todas</option>';
-    categories.forEach(cat => {
-      categoryFilter.innerHTML += `<option>${cat}</option>`;
+      gamesEl.appendChild(div);
     });
+}
+
+function updateCategories() {
+  const categories = [...new Set(games.map(g => g.category))];
+  categoryFilter.innerHTML = '<option value="">Todas</option>';
+  categories.forEach(cat => {
+    categoryFilter.innerHTML += `<option>${cat}</option>`;
+  });
+}
+
+searchInput.addEventListener("input", renderGames);
+categoryFilter.addEventListener("change", renderGames);
+
+function login() {
+  const senha = prompt("Senha:");
+  if (senha === "30218566k!") {
+    isAdmin = true;
+    document.getElementById("modal").style.display = "flex";
+    renderGames();
+  }
+}
+
+function saveGame() {
+  const name = document.getElementById("name").value;
+  const desc = document.getElementById("desc").value;
+  const link = document.getElementById("link").value;
+  const category = document.getElementById("category").value;
+  const file = document.getElementById("banner").files[0];
+
+  if (!file && !editId) {
+    alert("Selecione uma imagem!");
+    return;
   }
 
-  function login() {
-    const senha = prompt("Senha:");
-    if (senha === "30218566k!") {
-      isAdmin = true;
-      document.getElementById("modal").style.display = "flex";
-      renderGames();
-    }
-  }
+  const reader = new FileReader();
 
-  function saveGame() {
-    const name = nameInput.value;
-    const desc = descInput.value;
-    const link = linkInput.value;
-    const category = categoryInput.value;
-    const file = banner.files[0];
-
-    const reader = new FileReader();
-    reader.onload = e => {
-      const data = {
-        name, desc, link, category,
-        banner: e.target.result,
-        date: Date.now()
-      };
-
-      if (editId) {
-        db.ref("games/" + editId).update(data);
-      } else {
-        const ref = db.ref("games").push();
-        data.id = ref.key;
-        ref.set(data);
-      }
-
-      modal.style.display = "none";
+  reader.onload = function(e) {
+    const data = {
+      name,
+      desc,
+      link,
+      category,
+      banner: file ? e.target.result : games.find(g => g.id === editId).banner,
+      date: Date.now()
     };
 
+    if (editId) {
+      db.ref("games/" + editId).update(data);
+    } else {
+      const ref = db.ref("games").push();
+      data.id = ref.key;
+      ref.set(data);
+    }
+
+    document.getElementById("modal").style.display = "none";
+    editId = null;
+  };
+
+  if (file) {
     reader.readAsDataURL(file);
+  } else {
+    reader.onload({ target: { result: null } });
   }
+}
 
-  function deleteGame(id) {
-    db.ref("games/" + id).remove();
-  }
+function deleteGame(id) {
+  db.ref("games/" + id).remove();
+}
 
-  function editGame(id) {
-    const game = games.find(g => g.id === id);
-    editId = id;
+function editGame(id) {
+  const game = games.find(g => g.id === id);
+  editId = id;
 
-    nameInput.value = game.name;
-    descInput.value = game.desc;
-    linkInput.value = game.link;
-    categoryInput.value = game.category;
+  document.getElementById("name").value = game.name;
+  document.getElementById("desc").value = game.desc;
+  document.getElementById("link").value = game.link;
+  document.getElementById("category").value = game.category;
 
-    modal.style.display = "flex";
-  }
+  document.getElementById("modal").style.display = "flex";
+}
 
-  db.ref("games").on("value", snapshot => {
-    const data = snapshot.val() || {};
-    games = Object.values(data);
-    renderGames();
-    updateCategories();
-  });
+db.ref("games").on("value", snapshot => {
+  const data = snapshot.val() || {};
+  games = Object.values(data);
+  renderGames();
+  updateCategories();
+});
 </script>
 
 </body>
