@@ -8,6 +8,7 @@
   <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -175,9 +176,35 @@ const gamesEl = document.getElementById("games");
 const searchInput = document.getElementById("search");
 const categoryFilter = document.getElementById("categoryFilter");
 
-// 🔒 manter login salvo
-if (localStorage.getItem("admin") === "true") {
-  isAdmin = true;
+// 🔐 detectar login
+firebase.auth().onAuthStateChanged(user => {
+  isAdmin = !!user;
+  renderGames();
+});
+
+// 🔐 login profissional
+function login() {
+  const email = prompt("Email:");
+  const senha = prompt("Senha:");
+
+  firebase.auth().signInWithEmailAndPassword(email, senha)
+    .then(() => {
+      alert("Logado!");
+      document.getElementById("modal").style.display = "flex";
+    })
+    .catch(() => alert("Login inválido"));
+}
+
+// 🔐 logout
+function logout() {
+  firebase.auth().signOut();
+}
+
+// 📌 fixar post
+function togglePin(id, current) {
+  db.ref("games/" + id).update({
+    pinned: !current
+  });
 }
 
 function renderGames() {
@@ -189,20 +216,25 @@ function renderGames() {
   games
     .filter(g => g.name.toLowerCase().includes(search))
     .filter(g => !category || g.category === category)
-    .sort((a,b)=> b.date - a.date)
+    .sort((a,b)=> {
+      if (b.pinned && !a.pinned) return 1;
+      if (a.pinned && !b.pinned) return -1;
+      return b.date - a.date;
+    })
     .forEach(game => {
 
       const div = document.createElement("div");
       div.className = "card";
 
       div.innerHTML = `
-        ${isAdmin === true ? `<div class="actions">
+        ${isAdmin ? `<div class="actions">
+          <button onclick="togglePin('${game.id}', ${game.pinned || false})">📌</button>
           <button onclick="editGame('${game.id}')">✏️</button>
           <button onclick="deleteGame('${game.id}')">🗑️</button>
         </div>` : ""}
         <img src="${game.banner}">
         <div class="card-content">
-          <h3>${game.name}</h3>
+          <h3>${game.pinned ? "📌 " : ""}${game.name}</h3>
           <p>${game.desc}</p>
           <p><b>${game.category}</b></p>
           <a href="${game.link}" target="_blank">Acessar</a>
@@ -223,28 +255,6 @@ function updateCategories() {
 
 searchInput.addEventListener("input", renderGames);
 categoryFilter.addEventListener("change", renderGames);
-
-// 🔒 login "oculto"
-function login() {
-  const senha = prompt("Senha:");
-
-  if (btoa(senha) === "MzAyMTg1NjZrIQ==") {
-    isAdmin = true;
-    localStorage.setItem("admin", "true");
-
-    document.getElementById("modal").style.display = "flex";
-    renderGames();
-  } else {
-    alert("Senha incorreta");
-  }
-}
-
-// 🔒 logout
-function logout() {
-  isAdmin = false;
-  localStorage.removeItem("admin");
-  renderGames();
-}
 
 function saveGame() {
   const name = document.getElementById("name").value;
@@ -267,7 +277,8 @@ function saveGame() {
       link,
       category,
       banner: file ? e.target.result : games.find(g => g.id === editId).banner,
-      date: Date.now()
+      date: Date.now(),
+      pinned: false
     };
 
     if (editId) {
