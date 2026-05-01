@@ -156,13 +156,6 @@
 
 <header>🎮 New Way Community</header>
 
-<div class="search-container">
-  <input type="text" id="search" placeholder="Pesquisar jogos...">
-  <select id="categoryFilter">
-    <option value="">Todas categorias</option>
-  </select>
-</div>
-
 <section class="games" id="games"></section>
 
 <button class="admin-btn" onclick="login()">+</button>
@@ -190,7 +183,6 @@
 </div>
 
 <script>
-// 🔥 NOVO FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyC8J21BmeYHfco3X1qx6_KCi4RU1wqOoIo",
   authDomain: "new-way-community-7e8a0.firebaseapp.com",
@@ -257,7 +249,6 @@ function renderGames() {
 
     div.innerHTML = `
       ${isAdmin ? `<div class="actions">
-        <button onclick="editGame('${game.id}')">✏️</button>
         <button onclick="deleteGame('${game.id}')">🗑️</button>
       </div>` : ""}
       <img src="${game.banner}">
@@ -272,7 +263,12 @@ function renderGames() {
   });
 }
 
+// 🔥 FUNÇÃO CORRIGIDA (A SUA)
 function saveGame() {
+  const name = document.getElementById("name").value;
+  const desc = document.getElementById("desc").value;
+  const category = document.getElementById("category").value;
+
   const links = Array.from(document.querySelectorAll(".link-input"))
     .map(i => i.value)
     .filter(v => v);
@@ -288,10 +284,10 @@ function saveGame() {
 
   reader.onload = function(e) {
     const data = {
-      name: name.value,
-      desc: desc.value,
-      links: links,
-      category: category.value,
+      name,
+      desc,
+      links,
+      category,
       banner: e.target.result,
       date: Date.now()
     };
@@ -308,10 +304,6 @@ function saveGame() {
 
 function deleteGame(id) {
   db.ref("games/" + id).remove();
-}
-
-function editGame(id) {
-  alert("Edição simples por enquanto");
 }
 
 db.ref("games").on("value", snapshot => {
