@@ -139,6 +139,7 @@
 <section class="games" id="games"></section>
 
 <button class="admin-btn" onclick="login()">+</button>
+<button class="admin-btn" onclick="logout()" style="right:80px;">⛔</button>
 
 <div class="modal" id="modal">
   <div class="modal-content">
@@ -174,6 +175,11 @@ const gamesEl = document.getElementById("games");
 const searchInput = document.getElementById("search");
 const categoryFilter = document.getElementById("categoryFilter");
 
+// 🔒 manter login salvo
+if (localStorage.getItem("admin") === "true") {
+  isAdmin = true;
+}
+
 function renderGames() {
   const search = searchInput.value.toLowerCase();
   const category = categoryFilter.value;
@@ -190,7 +196,7 @@ function renderGames() {
       div.className = "card";
 
       div.innerHTML = `
-        ${isAdmin ? `<div class="actions">
+        ${isAdmin === true ? `<div class="actions">
           <button onclick="editGame('${game.id}')">✏️</button>
           <button onclick="deleteGame('${game.id}')">🗑️</button>
         </div>` : ""}
@@ -218,13 +224,26 @@ function updateCategories() {
 searchInput.addEventListener("input", renderGames);
 categoryFilter.addEventListener("change", renderGames);
 
+// 🔒 login "oculto"
 function login() {
   const senha = prompt("Senha:");
-  if (senha === "30218566k!") {
+
+  if (btoa(senha) === "MzAyMTg1NjZrIQ==") {
     isAdmin = true;
+    localStorage.setItem("admin", "true");
+
     document.getElementById("modal").style.display = "flex";
     renderGames();
+  } else {
+    alert("Senha incorreta");
   }
+}
+
+// 🔒 logout
+function logout() {
+  isAdmin = false;
+  localStorage.removeItem("admin");
+  renderGames();
 }
 
 function saveGame() {
