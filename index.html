@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Hub Neon</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0d0d0d; color: white; overflow-x: hidden; }
+    header { padding: 20px; text-align: center; font-size: 24px; text-shadow: 0 0 10px #8a2eff; }
+    .search-container { display: flex; justify-content: center; padding: 20px; }
+    input { width: 80%; max-width: 500px; padding: 12px; border-radius: 10px; border: none; outline: none; background: #1a1a1a; color: white; box-shadow: 0 0 10px #6a00ff; }
+    .admin-btn { position: fixed; bottom: 20px; right: 20px; background: #6a00ff; border: none; padding: 15px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px #8a2eff; color: white; font-size: 18px; }
+    .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 20px; }
+    .card { background: #111; border-radius: 15px; overflow: hidden; box-shadow: 0 0 15px rgba(138, 46, 255, 0.3); transition: 0.3s; }
+    .card:hover { transform: scale(1.05); box-shadow: 0 0 25px #8a2eff; }
+    .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+    .card-content { padding: 15px; }
+    .card a { text-decoration: none; color: white; background: #8a2eff; padding: 8px 12px; border-radius: 8px; display: inline-block; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; }
+    .modal-content { background: #111; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 0 20px #6a00ff; }
+    .modal input { width: 100%; margin: 10px 0; }
+    .modal button { width: 100%; padding: 10px; background: #6a00ff; border: none; border-radius: 8px; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+<header>🎮 Game Hub Neon</header>
+<div class="search-container">
+<input type="text" id="search" placeholder="Pesquisar jogos...">
+</div>
+<section class="games" id="games"></section>
+<button class="admin-btn" onclick="login()">+</button>
+<div class="modal" id="modal">
+<div class="modal-content">
+<h3>Adicionar Jogo</h3>
+<input id="name" placeholder="Nome do jogo">
+<input id="desc" placeholder="Descrição">
+<input id="link" placeholder="Link">
+<input id="banner" placeholder="URL do banner">
+<button onclick="addGame()">Adicionar</button>
+</div>
+</div>
+<script>
+const gamesEl = document.getElementById("games");
+const searchInput = document.getElementById("search");
+let games = JSON.parse(localStorage.getItem("games")) || [];
+function renderGames(filter = "") {
+  gamesEl.innerHTML = "";
+  games.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()))
+  .sort((a,b)=> b.date - a.date)
+  .forEach(game => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `<img src="${game.banner}"><div class="card-content"><h3>${game.name}</h3><p>${game.desc}</p><a href="${game.link}" target="_blank">Acessar</a></div>`;
+    gamesEl.appendChild(div);
+  });
+}
+searchInput.addEventListener("input", (e) => renderGames(e.target.value));
+function login() {
+  const senha = prompt("Digite a senha:");
+  if (senha === "1234") document.getElementById("modal").style.display = "flex";
+  else alert("Senha incorreta");
+}
+function addGame() {
+  const game = {
+    name: document.getElementById("name").value,
+    desc: document.getElementById("desc").value,
+    link: document.getElementById("link").value,
+    banner: document.getElementById("banner").value,
+    date: Date.now()
+  };
+  games.push(game);
+  localStorage.setItem("games", JSON.stringify(games));
+  document.getElementById("modal").style.display = "none";
+  renderGames();
+}
+renderGames();
+</script>
+</body>
+</html>
