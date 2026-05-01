@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Way Community</title>
 
-  <!-- Firebase compat -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -126,16 +126,30 @@
       color: white;
     }
 
-    /* NOVO BOTÃO X */
     .close-btn {
       position: absolute;
       top: 10px;
       right: 15px;
       font-size: 20px;
       cursor: pointer;
-      color: white;
     }
 
+    /* NOVO */
+    .add-link-btn {
+      margin-top: 5px;
+      background: #8a2eff;
+    }
+
+    .link-btn {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 6px 10px;
+      background: #6a00ff;
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -158,12 +172,18 @@
   <div class="modal-content">
     <h3>Adicionar Jogo</h3>
 
-    <!-- BOTÃO X -->
     <span class="close-btn" onclick="closeModal()">✖</span>
 
     <input id="name" placeholder="Nome do jogo">
     <input id="desc" placeholder="Descrição">
-    <input id="link" placeholder="Link">
+
+    <!-- LINKS DINÂMICOS -->
+    <div id="linksContainer">
+      <input class="link-input" placeholder="Link">
+    </div>
+
+    <button class="add-link-btn" onclick="addLinkField()">+ Adicionar Link</button>
+
     <input id="banner" type="file" accept="image/*">
     <input id="category" placeholder="Categoria">
     <button onclick="saveGame()">Salvar</button>
@@ -172,13 +192,10 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
+  apiKey: "AIzaSy...",
   authDomain: "new-way-community.firebaseapp.com",
   databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
-  projectId: "new-way-community",
-  storageBucket: "new-way-community.firebasestorage.app",
-  messagingSenderId: "165462675701",
-  appId: "1:165462675701:web:0b5a53ada33fad5808f5bc"
+  projectId: "new-way-community"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -189,137 +206,94 @@ let isAdmin = false;
 let editId = null;
 
 const gamesEl = document.getElementById("games");
-const searchInput = document.getElementById("search");
-const categoryFilter = document.getElementById("categoryFilter");
 
-// 🔐 detectar login
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
   renderGames();
 });
 
-// 🔐 login profissional
 function login() {
   const email = prompt("Email:");
   const senha = prompt("Senha:");
 
   firebase.auth().signInWithEmailAndPassword(email, senha)
     .then(() => {
-      alert("Logado!");
       document.getElementById("modal").style.display = "flex";
     })
     .catch(() => alert("Login inválido"));
 }
 
-// 🔐 logout
 function logout() {
   firebase.auth().signOut();
 }
 
-// 📌 fixar post
-function togglePin(id, current) {
-  db.ref("games/" + id).update({
-    pinned: !current
-  });
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function addLinkField() {
+  const container = document.getElementById("linksContainer");
+  const input = document.createElement("input");
+  input.className = "link-input";
+  input.placeholder = "Link adicional";
+  container.appendChild(input);
 }
 
 function renderGames() {
-  const search = searchInput.value.toLowerCase();
-  const category = categoryFilter.value;
-
   gamesEl.innerHTML = "";
 
-  games
-    .filter(g => g.name.toLowerCase().includes(search))
-    .filter(g => !category || g.category === category)
-    .sort((a,b)=> {
-      if (b.pinned && !a.pinned) return 1;
-      if (a.pinned && !b.pinned) return -1;
-      return b.date - a.date;
-    })
-    .forEach(game => {
+  games.forEach(game => {
+    const div = document.createElement("div");
+    div.className = "card";
 
-      const div = document.createElement("div");
-      div.className = "card";
+    const linksHTML = (game.links || []).map((l,i) =>
+      `<a href="${l}" target="_blank" class="link-btn">Link ${i+1}</a>`
+    ).join("");
 
-      div.innerHTML = `
-        ${isAdmin ? `<div class="actions">
-          <button onclick="togglePin('${game.id}', ${game.pinned || false})">📌</button>
-          <button onclick="editGame('${game.id}')">✏️</button>
-          <button onclick="deleteGame('${game.id}')">🗑️</button>
-        </div>` : ""}
-        <img src="${game.banner}">
-        <div class="card-content">
-          <h3>${game.pinned ? "📌 " : ""}${game.name}</h3>
-          <p>${game.desc}</p>
-          <p><b>${game.category}</b></p>
-          <a href="${game.link}" target="_blank">Acessar</a>
-        </div>
-      `;
+    div.innerHTML = `
+      ${isAdmin ? `<div class="actions">
+        <button onclick="editGame('${game.id}')">✏️</button>
+        <button onclick="deleteGame('${game.id}')">🗑️</button>
+      </div>` : ""}
+      <img src="${game.banner}">
+      <div class="card-content">
+        <h3>${game.name}</h3>
+        <p>${game.desc}</p>
+        ${linksHTML}
+      </div>
+    `;
 
-      gamesEl.appendChild(div);
-    });
-}
-
-function updateCategories() {
-  const categories = [...new Set(games.map(g => g.category))];
-  categoryFilter.innerHTML = '<option value="">Todas</option>';
-  categories.forEach(cat => {
-    categoryFilter.innerHTML += `<option>${cat}</option>`;
+    gamesEl.appendChild(div);
   });
 }
 
-searchInput.addEventListener("input", renderGames);
-categoryFilter.addEventListener("change", renderGames);
-
-// 🔴 FUNÇÃO NOVA
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-  editId = null;
-}
-
 function saveGame() {
-  const name = document.getElementById("name").value;
-  const desc = document.getElementById("desc").value;
-  const link = document.getElementById("link").value;
-  const category = document.getElementById("category").value;
-  const file = document.getElementById("banner").files[0];
+  const links = Array.from(document.querySelectorAll(".link-input"))
+    .map(i => i.value)
+    .filter(v => v);
 
-  if (!file && !editId) {
-    alert("Selecione uma imagem!");
-    return;
-  }
+  const file = document.getElementById("banner").files[0];
 
   const reader = new FileReader();
 
   reader.onload = function(e) {
     const data = {
-      name,
-      desc,
-      link,
-      category,
-      banner: file ? e.target.result : games.find(g => g.id === editId).banner,
-      date: Date.now(),
-      pinned: false
+      name: name.value,
+      desc: desc.value,
+      links: links,
+      category: category.value,
+      banner: e.target.result,
+      date: Date.now()
     };
 
-    if (editId) {
-      db.ref("games/" + editId).update(data);
-    } else {
-      const ref = db.ref("games").push();
-      data.id = ref.key;
-      ref.set(data);
-    }
+    const ref = db.ref("games").push();
+    data.id = ref.key;
+    ref.set(data);
 
-    document.getElementById("modal").style.display = "none";
-    editId = null;
+    closeModal();
   };
 
-  if (file) {
-    reader.readAsDataURL(file);
-  } else {
-    reader.onload({ target: { result: null } });
-  }
+  reader.readAsDataURL(file);
 }
 
 function deleteGame(id) {
@@ -327,22 +301,13 @@ function deleteGame(id) {
 }
 
 function editGame(id) {
-  const game = games.find(g => g.id === id);
-  editId = id;
-
-  document.getElementById("name").value = game.name;
-  document.getElementById("desc").value = game.desc;
-  document.getElementById("link").value = game.link;
-  document.getElementById("category").value = game.category;
-
-  document.getElementById("modal").style.display = "flex";
+  alert("Edição simples por enquanto");
 }
 
 db.ref("games").on("value", snapshot => {
   const data = snapshot.val() || {};
   games = Object.values(data);
   renderGames();
-  updateCategories();
 });
 </script>
 
