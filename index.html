@@ -156,6 +156,13 @@
 
 <header>🎮 New Way Community</header>
 
+<div class="search-container">
+  <input type="text" id="search" placeholder="Pesquisar jogos...">
+  <select id="categoryFilter">
+    <option value="">Todas categorias</option>
+  </select>
+</div>
+
 <section class="games" id="games"></section>
 
 <button class="admin-btn" onclick="login()">+</button>
@@ -184,14 +191,14 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyC8J21BmeYHfco3X1qx6_KCi4RU1wqOoIo",
-  authDomain: "new-way-community-7e8a0.firebaseapp.com",
-  databaseURL: "https://new-way-community-7e8a0-default-rtdb.firebaseio.com",
-  projectId: "new-way-community-7e8a0",
-  storageBucket: "new-way-community-7e8a0.firebasestorage.app",
-  messagingSenderId: "921355438217",
-  appId: "1:921355438217:web:63bcae438ef6c14ee85e58",
-  measurementId: "G-F4ZR8DCNXP"
+  apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
+  authDomain: "new-way-community.firebaseapp.com",
+  databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
+  projectId: "new-way-community",
+  storageBucket: "new-way-community.firebasestorage.app",
+  messagingSenderId: "165462675701",
+  appId: "1:165462675701:web:2d1312c284461d5808f5bc",
+  measurementId: "G-630ZEM4FR4"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -249,6 +256,7 @@ function renderGames() {
 
     div.innerHTML = `
       ${isAdmin ? `<div class="actions">
+        <button onclick="editGame('${game.id}')">✏️</button>
         <button onclick="deleteGame('${game.id}')">🗑️</button>
       </div>` : ""}
       <img src="${game.banner}">
@@ -263,31 +271,21 @@ function renderGames() {
   });
 }
 
-// 🔥 FUNÇÃO CORRIGIDA (A SUA)
 function saveGame() {
-  const name = document.getElementById("name").value;
-  const desc = document.getElementById("desc").value;
-  const category = document.getElementById("category").value;
-
   const links = Array.from(document.querySelectorAll(".link-input"))
     .map(i => i.value)
     .filter(v => v);
 
   const file = document.getElementById("banner").files[0];
 
-  if (!file) {
-    alert("Selecione uma imagem!");
-    return;
-  }
-
   const reader = new FileReader();
 
   reader.onload = function(e) {
     const data = {
-      name,
-      desc,
-      links,
-      category,
+      name: name.value,
+      desc: desc.value,
+      links: links,
+      category: category.value,
       banner: e.target.result,
       date: Date.now()
     };
@@ -304,6 +302,10 @@ function saveGame() {
 
 function deleteGame(id) {
   db.ref("games/" + id).remove();
+}
+
+function editGame(id) {
+  alert("Edição simples por enquanto");
 }
 
 db.ref("games").on("value", snapshot => {
