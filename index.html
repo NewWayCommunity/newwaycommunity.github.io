@@ -1,53 +1,34 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Way Community</title>  <style>
+  <title>New Way Community</title>
+
+  <!-- Firebase (versão compatível com seu código) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: #0d0d0d;
-      color: white;
-    }
-
-    header {
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-      text-shadow: 0 0 10px #8a2eff;
-    }
+    body { font-family: Arial, sans-serif; background: #0d0d0d; color: white; }
+    header { padding: 20px; text-align: center; font-size: 24px; text-shadow: 0 0 10px #8a2eff; }
 
     .search-container {
       display: flex;
       justify-content: center;
+      gap: 10px;
       padding: 20px;
+      flex-wrap: wrap;
     }
 
-    input {
-      width: 80%;
-      max-width: 500px;
+    input, select {
       padding: 12px;
       border-radius: 10px;
       border: none;
-      outline: none;
       background: #1a1a1a;
       color: white;
       box-shadow: 0 0 10px #6a00ff;
-    }
-
-    .admin-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #6a00ff;
-      border: none;
-      padding: 15px;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 0 15px #8a2eff;
-      color: white;
-      font-size: 18px;
     }
 
     .games {
@@ -62,12 +43,7 @@
       border-radius: 15px;
       overflow: hidden;
       box-shadow: 0 0 15px rgba(138, 46, 255, 0.3);
-      transition: 0.3s;
-    }
-
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 25px #8a2eff;
+      position: relative;
     }
 
     .card img {
@@ -76,17 +52,23 @@
       object-fit: cover;
     }
 
-    .card-content {
-      padding: 15px;
+    .card-content { padding: 15px; }
+
+    .actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
     }
 
-    .card a {
-      text-decoration: none;
+    .actions button {
+      background: rgba(0,0,0,0.6);
+      border: none;
       color: white;
-      background: #8a2eff;
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: inline-block;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     .modal {
@@ -107,13 +89,9 @@
       border-radius: 15px;
       width: 90%;
       max-width: 400px;
-      box-shadow: 0 0 20px #6a00ff;
     }
 
-    .modal input {
-      width: 100%;
-      margin: 10px 0;
-    }
+    .modal input { width: 100%; margin: 10px 0; }
 
     .modal button {
       width: 100%;
@@ -122,90 +100,173 @@
       border: none;
       border-radius: 8px;
       color: white;
+    }
+
+    .admin-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #6a00ff;
+      border: none;
+      padding: 15px;
+      border-radius: 50%;
       cursor: pointer;
+      color: white;
     }
-  </style></head>
-<body>  <header>🎮 New Way Community</header>  <div class="search-container">
-    <input type="text" id="search" placeholder="Pesquisar jogos...">
-  </div>  <section class="games" id="games"></section><button class="admin-btn" onclick="login()">+</button>
+  </style>
+</head>
+<body>
 
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h3>Adicionar Jogo</h3>
-      <input id="name" placeholder="Nome do jogo">
-      <input id="desc" placeholder="Descrição">
-      <input id="link" placeholder="Link">
-      <input id="banner" type="file" accept="image/*">
-      <button onclick="addGame()">Adicionar</button>
-    </div>
-  </div>  <script>
-    const gamesEl = document.getElementById("games");
-    const searchInput = document.getElementById("search");
-    let games = JSON.parse(localStorage.getItem("games")) || [];
+<header>🎮 New Way Community</header>
 
-    function renderGames(filter = "") {
-      gamesEl.innerHTML = "";
-      games
-        .filter(g => g.name.toLowerCase().includes(filter.toLowerCase()))
-        .sort((a,b)=> b.date - a.date)
-        .forEach(game => {
-          const div = document.createElement("div");
-          div.className = "card";
+<div class="search-container">
+  <input type="text" id="search" placeholder="Pesquisar jogos...">
+  <select id="categoryFilter">
+    <option value="">Todas categorias</option>
+  </select>
+</div>
 
-          div.innerHTML = `
-            <img src="${game.banner}">
-            <div class="card-content">
-              <h3>${game.name}</h3>
-              <p>${game.desc}</p>
-              <a href="${game.link}" target="_blank">Acessar</a>
-            </div>
-          `;
+<section class="games" id="games"></section>
 
-          gamesEl.appendChild(div);
-        });
-    }
+<button class="admin-btn" onclick="login()">+</button>
 
-    searchInput.addEventListener("input", (e) => {
-      renderGames(e.target.value);
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Adicionar Jogo</h3>
+    <input id="name" placeholder="Nome do jogo">
+    <input id="desc" placeholder="Descrição">
+    <input id="link" placeholder="Link">
+    <input id="banner" type="file" accept="image/*">
+    <input id="category" placeholder="Categoria">
+    <button onclick="saveGame()">Salvar</button>
+  </div>
+</div>
+
+<script>
+  // 🔥 SEU FIREBASE (já configurado)
+  const firebaseConfig = {
+    apiKey: "AIzaSyALQLuy_gVsnXRkdjLaHQPKLyH_sMBTXCA",
+    authDomain: "new-way-community.firebaseapp.com",
+    databaseURL: "https://new-way-community-default-rtdb.firebaseio.com",
+    projectId: "new-way-community",
+    storageBucket: "new-way-community.firebasestorage.app",
+    messagingSenderId: "165462675701",
+    appId: "1:165462675701:web:0b5a53ada33fad5808f5bc"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let games = [];
+  let isAdmin = false;
+  let editId = null;
+
+  const gamesEl = document.getElementById("games");
+  const searchInput = document.getElementById("search");
+  const categoryFilter = document.getElementById("categoryFilter");
+
+  function renderGames() {
+    const search = searchInput.value.toLowerCase();
+    const category = categoryFilter.value;
+
+    gamesEl.innerHTML = "";
+
+    games
+      .filter(g => g.name.toLowerCase().includes(search))
+      .filter(g => !category || g.category === category)
+      .sort((a,b)=> b.date - a.date)
+      .forEach(game => {
+
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+          ${isAdmin ? `<div class="actions">
+            <button onclick="editGame('${game.id}')">✏️</button>
+            <button onclick="deleteGame('${game.id}')">🗑️</button>
+          </div>` : ""}
+          <img src="${game.banner}">
+          <div class="card-content">
+            <h3>${game.name}</h3>
+            <p>${game.desc}</p>
+            <p><b>${game.category}</b></p>
+            <a href="${game.link}" target="_blank">Acessar</a>
+          </div>
+        `;
+
+        gamesEl.appendChild(div);
+      });
+  }
+
+  function updateCategories() {
+    const categories = [...new Set(games.map(g => g.category))];
+    categoryFilter.innerHTML = '<option value=\"\">Todas</option>';
+    categories.forEach(cat => {
+      categoryFilter.innerHTML += `<option>${cat}</option>`;
     });
+  }
 
-    function login() {
-      const senha = prompt("Digite a senha:");
-      if (senha === "30218566k!") {
-        document.getElementById("modal").style.display = "flex";
-      } else {
-        alert("Senha incorreta");
-      }
+  function login() {
+    const senha = prompt("Senha:");
+    if (senha === "30218566k!") {
+      isAdmin = true;
+      document.getElementById("modal").style.display = "flex";
+      renderGames();
     }
+  }
 
-    function addGame() {
-      const name = document.getElementById("name").value;
-      const desc = document.getElementById("desc").value;
-      const link = document.getElementById("link").value;
-      const file = document.getElementById("banner").files[0];
+  function saveGame() {
+    const name = nameInput.value;
+    const desc = descInput.value;
+    const link = linkInput.value;
+    const category = categoryInput.value;
+    const file = banner.files[0];
 
-      if (!file) return alert("Selecione uma imagem");
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const game = {
-          name,
-          desc,
-          link,
-          banner: e.target.result,
-          date: Date.now()
-        };
-
-        games.push(game);
-        localStorage.setItem("games", JSON.stringify(games));
-
-        document.getElementById("modal").style.display = "none";
-        renderGames();
+    const reader = new FileReader();
+    reader.onload = e => {
+      const data = {
+        name, desc, link, category,
+        banner: e.target.result,
+        date: Date.now()
       };
 
-      reader.readAsDataURL(file);
-    }
+      if (editId) {
+        db.ref("games/" + editId).update(data);
+      } else {
+        const ref = db.ref("games").push();
+        data.id = ref.key;
+        ref.set(data);
+      }
 
+      modal.style.display = "none";
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function deleteGame(id) {
+    db.ref("games/" + id).remove();
+  }
+
+  function editGame(id) {
+    const game = games.find(g => g.id === id);
+    editId = id;
+
+    nameInput.value = game.name;
+    descInput.value = game.desc;
+    linkInput.value = game.link;
+    categoryInput.value = game.category;
+
+    modal.style.display = "flex";
+  }
+
+  db.ref("games").on("value", snapshot => {
+    const data = snapshot.val() || {};
+    games = Object.values(data);
     renderGames();
-  </script></body>
+    updateCategories();
+  });
+</script>
+
+</body>
 </html>
