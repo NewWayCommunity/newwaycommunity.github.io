@@ -96,6 +96,7 @@
       border-radius: 15px;
       width: 90%;
       max-width: 400px;
+      position: relative;
     }
 
     .modal input {
@@ -124,6 +125,17 @@
       cursor: pointer;
       color: white;
     }
+
+    /* NOVO BOTÃO X */
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+    }
+
   </style>
 </head>
 <body>
@@ -145,6 +157,10 @@
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>Adicionar Jogo</h3>
+
+    <!-- BOTÃO X -->
+    <span class="close-btn" onclick="closeModal()">✖</span>
+
     <input id="name" placeholder="Nome do jogo">
     <input id="desc" placeholder="Descrição">
     <input id="link" placeholder="Link">
@@ -255,6 +271,12 @@ function updateCategories() {
 
 searchInput.addEventListener("input", renderGames);
 categoryFilter.addEventListener("change", renderGames);
+
+// 🔴 FUNÇÃO NOVA
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  editId = null;
+}
 
 function saveGame() {
   const name = document.getElementById("name").value;
