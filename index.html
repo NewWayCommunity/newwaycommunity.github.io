@@ -5,21 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Way Community</title>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial; background: #0d0d0d; color: white; }
+    body { font-family: Arial, sans-serif; background: #0d0d0d; color: white; }
 
     header {
       padding: 20px;
       text-align: center;
       font-size: 24px;
       text-shadow: 0 0 10px #8a2eff;
+      font-weight: bold;
     }
 
     .search-container {
@@ -37,11 +36,12 @@
       background: #1a1a1a;
       color: white;
       box-shadow: 0 0 10px #6a00ff;
+      outline: none;
     }
 
     .games {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       padding: 20px;
     }
@@ -52,14 +52,17 @@
       overflow: hidden;
       position: relative;
       box-shadow: 0 0 15px rgba(138,46,255,0.3);
+      transition: 0.3s;
     }
 
-    .card img {
-      width: 100%;
-      aspect-ratio: 16/9;
-      object-fit: cover;
+    /* Estilo para fixados */
+    .card.pinned { border: 2px solid #8a2eff; box-shadow: 0 0 20px #8a2eff; }
+    .pin-badge { 
+      background: #8a2eff; color: white; padding: 2px 8px; 
+      border-radius: 5px; font-size: 10px; position: absolute; top: 10px; left: 10px;
     }
 
+    .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
     .card-content { padding: 15px; }
 
     .actions {
@@ -68,13 +71,14 @@
       right: 10px;
       display: flex;
       gap: 5px;
+      z-index: 10;
     }
 
     .actions button {
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.8);
       border: none;
       color: white;
-      padding: 5px 8px;
+      padding: 6px;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -85,10 +89,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.9);
       display: none;
       justify-content: center;
       align-items: center;
+      z-index: 100;
     }
 
     .modal-content {
@@ -96,24 +101,15 @@
       padding: 20px;
       border-radius: 15px;
       width: 90%;
-      max-width: 400px;
+      max-width: 450px;
       position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
-    .modal input {
-      width: 100%;
-      margin: 10px 0;
-    }
-
-    .modal button {
-      width: 100%;
-      padding: 10px;
-      background: #6a00ff;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-    }
+    .modal h3 { margin-bottom: 15px; }
+    .modal input { width: 100%; margin: 8px 0; }
+    .modal button { width: 100%; padding: 12px; background: #6a00ff; border: none; border-radius: 8px; color: white; cursor: pointer; margin-top: 10px; }
 
     .admin-btn {
       position: fixed;
@@ -121,35 +117,20 @@
       right: 20px;
       background: #6a00ff;
       border: none;
-      padding: 15px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       cursor: pointer;
       color: white;
+      font-weight: bold;
+      z-index: 90;
     }
 
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .add-link-btn {
-      margin-top: 5px;
-      background: #8a2eff;
-    }
-
-    .link-btn {
-      display: inline-block;
-      margin-top: 5px;
-      padding: 6px 10px;
-      background: #6a00ff;
-      border-radius: 6px;
-      color: white;
-      text-decoration: none;
-      margin-right: 5px;
-    }
+    .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; }
+    .link-btn { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #6a00ff; border-radius: 6px; color: white; text-decoration: none; margin-right: 5px; font-size: 14px; }
+    
+    .pinned-toggle { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+    .pinned-toggle input { width: auto; }
   </style>
 </head>
 <body>
@@ -157,40 +138,44 @@
 <header>🎮 New Way Community</header>
 
 <div class="search-container">
-  <input type="text" id="search" placeholder="Pesquisar jogos...">
-  <select id="categoryFilter">
+  <input type="text" id="search" placeholder="Pesquisar jogos..." oninput="renderGames()">
+  <select id="categoryFilter" onchange="renderGames()">
     <option value="">Todas categorias</option>
   </select>
 </div>
 
 <section class="games" id="games"></section>
 
-<button class="admin-btn" onclick="login()">+</button>
+<button class="admin-btn" onclick="openAddModal()">+</button>
 <button class="admin-btn" onclick="logout()" style="right:80px;">⛔</button>
 
 <div class="modal" id="modal">
   <div class="modal-content">
-    <h3>Adicionar Jogo</h3>
-
+    <h3 id="modalTitle">Adicionar Jogo</h3>
     <span class="close-btn" onclick="closeModal()">✖</span>
 
+    <input id="gameId" type="hidden">
     <input id="name" placeholder="Nome do jogo">
     <input id="desc" placeholder="Descrição">
+    <input id="category" placeholder="Categoria (ex: RPG, Ação)">
 
     <div id="linksContainer">
       <input class="link-input" placeholder="Link">
     </div>
+    <button style="background:#444" onclick="addLinkField()">+ Link</button>
 
-    <button class="add-link-btn" onclick="addLinkField()">+ Adicionar Link</button>
+    <div class="pinned-toggle">
+      <input type="checkbox" id="pinned"> <label for="pinned">Fixar no topo</label>
+    </div>
 
+    <p style="font-size:12px; color: #888; margin-top:10px;">Banner (opcional se estiver editando):</p>
     <input id="banner" type="file" accept="image/*">
-    <input id="category" placeholder="Categoria">
-    <button onclick="saveGame()">Salvar</button>
+    
+    <button onclick="saveGame()" id="saveBtn">Salvar Jogo</button>
   </div>
 </div>
 
 <script>
-// 🔥 NOVO FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyC8J21BmeYHfco3X1qx6_KCi4RU1wqOoIo",
   authDomain: "new-way-community-7e8a0.firebaseapp.com",
@@ -198,20 +183,15 @@ const firebaseConfig = {
   projectId: "new-way-community-7e8a0",
   storageBucket: "new-way-community-7e8a0.firebasestorage.app",
   messagingSenderId: "921355438217",
-  appId: "1:921355438217:web:63bcae438ef6c14ee85e58",
-  measurementId: "G-F4ZR8DCNXP"
+  appId: "1:921355438217:web:63bcae438ef6c14ee85e58"
 };
 
 firebase.initializeApp(firebaseConfig);
-firebase.analytics();
-
 const db = firebase.database();
-
-let games = [];
+let allGames = [];
 let isAdmin = false;
 
-const gamesEl = document.getElementById("games");
-
+// Observador de Autenticação
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
   renderGames();
@@ -220,42 +200,62 @@ firebase.auth().onAuthStateChanged(user => {
 function login() {
   const email = prompt("Email:");
   const senha = prompt("Senha:");
-
-  firebase.auth().signInWithEmailAndPassword(email, senha)
-    .then(() => {
-      document.getElementById("modal").style.display = "flex";
-    })
-    .catch(() => alert("Login inválido"));
+  if(email && senha) {
+    firebase.auth().signInWithEmailAndPassword(email, senha).catch(() => alert("Login inválido"));
+  }
 }
 
-function logout() {
-  firebase.auth().signOut();
+function logout() { firebase.auth().signOut(); }
+
+function openAddModal() {
+  if(!isAdmin) return login();
+  document.getElementById("modalTitle").innerText = "Adicionar Jogo";
+  document.getElementById("gameId").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("desc").value = "";
+  document.getElementById("category").value = "";
+  document.getElementById("pinned").checked = false;
+  document.getElementById("linksContainer").innerHTML = '<input class="link-input" placeholder="Link">';
+  document.getElementById("modal").style.display = "flex";
 }
 
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-}
+function closeModal() { document.getElementById("modal").style.display = "none"; }
 
-function addLinkField() {
-  const container = document.getElementById("linksContainer");
+function addLinkField(val = "") {
   const input = document.createElement("input");
   input.className = "link-input";
-  input.placeholder = "Link adicional";
-  container.appendChild(input);
+  input.placeholder = "Link";
+  input.value = val;
+  document.getElementById("linksContainer").appendChild(input);
 }
 
+// Lógica de Renderização com Filtro e Busca
 function renderGames() {
+  const gamesEl = document.getElementById("games");
+  const searchTerm = document.getElementById("search").value.toLowerCase();
+  const catFilter = document.getElementById("categoryFilter").value;
+  
   gamesEl.innerHTML = "";
 
-  games.forEach(game => {
-    const div = document.createElement("div");
-    div.className = "card";
+  // 1. Filtrar e 2. Ordenar (Fixados primeiro)
+  let filtered = allGames.filter(g => {
+    const matchSearch = g.name.toLowerCase().includes(searchTerm) || g.desc.toLowerCase().includes(searchTerm);
+    const matchCat = catFilter === "" || g.category === catFilter;
+    return matchSearch && matchCat;
+  });
 
-    const linksHTML = (game.links || []).map((l,i) =>
+  filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  filtered.forEach(game => {
+    const div = document.createElement("div");
+    div.className = `card ${game.pinned ? 'pinned' : ''}`;
+
+    const linksHTML = (game.links || []).map((l, i) =>
       `<a href="${l}" target="_blank" class="link-btn">Link ${i+1}</a>`
     ).join("");
 
     div.innerHTML = `
+      ${game.pinned ? '<span class="pin-badge">FIXADO</span>' : ''}
       ${isAdmin ? `<div class="actions">
         <button onclick="editGame('${game.id}')">✏️</button>
         <button onclick="deleteGame('${game.id}')">🗑️</button>
@@ -263,67 +263,99 @@ function renderGames() {
       <img src="${game.banner}">
       <div class="card-content">
         <h3>${game.name}</h3>
-        <p>${game.desc}</p>
+        <p style="font-size: 14px; color: #ccc; margin: 5px 0;">${game.desc}</p>
+        <small style="color: #8a2eff">#${game.category || 'Geral'}</small><br>
         ${linksHTML}
       </div>
     `;
-
     gamesEl.appendChild(div);
   });
+
+  updateCategoryList();
 }
 
+function updateCategoryList() {
+  const select = document.getElementById("categoryFilter");
+  const current = select.value;
+  const cats = [...new Set(allGames.map(g => g.category).filter(c => c))];
+  
+  select.innerHTML = '<option value="">Todas categorias</option>';
+  cats.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.innerText = c;
+    select.appendChild(opt);
+  });
+  select.value = current;
+}
+
+// Salvar / Editar
 function saveGame() {
+  const id = document.getElementById("gameId").value;
   const name = document.getElementById("name").value;
   const desc = document.getElementById("desc").value;
   const category = document.getElementById("category").value;
-
-  const links = Array.from(document.querySelectorAll(".link-input"))
-    .map(i => i.value)
-    .filter(v => v);
-
+  const pinned = document.getElementById("pinned").checked;
+  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
   const file = document.getElementById("banner").files[0];
 
-  if (!file) {
-    alert("Selecione uma imagem!");
-    return;
-  }
+  const uploadData = (imgUrl) => {
+    const data = { name, desc, links, category, pinned, date: Date.now() };
+    if (imgUrl) data.banner = imgUrl;
 
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const data = {
-      name,
-      desc,
-      links,
-      category,
-      banner: e.target.result,
-      date: Date.now()
-    };
-
-    const ref = db.ref("games").push();
-    data.id = ref.key;
-    ref.set(data);
-
+    if (id) {
+      db.ref("games/" + id).update(data);
+    } else {
+      const newRef = db.ref("games").push();
+      data.id = newRef.key;
+      newRef.set(data);
+    }
     closeModal();
   };
 
-  reader.readAsDataURL(file);
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => uploadData(e.target.result);
+    reader.readAsDataURL(file);
+  } else if (id) {
+    uploadData(null); // Mantém a imagem atual na edição
+  } else {
+    alert("Selecione uma imagem!");
+  }
 }
 
 function deleteGame(id) {
-  db.ref("games/" + id).remove();
+  if(confirm("Deseja excluir este jogo?")) db.ref("games/" + id).remove();
 }
 
 function editGame(id) {
-  alert("Edição simples por enquanto");
+  const game = allGames.find(g => g.id === id);
+  if(!game) return;
+
+  document.getElementById("modalTitle").innerText = "Editar Jogo";
+  document.getElementById("gameId").value = game.id;
+  document.getElementById("name").value = game.name;
+  document.getElementById("desc").value = game.desc;
+  document.getElementById("category").value = game.category || "";
+  document.getElementById("pinned").checked = !!game.pinned;
+  
+  const container = document.getElementById("linksContainer");
+  container.innerHTML = "";
+  if(game.links && game.links.length > 0) {
+    game.links.forEach(l => addLinkField(l));
+  } else {
+    addLinkField();
+  }
+
+  document.getElementById("modal").style.display = "flex";
 }
 
+// Sincronização em tempo real
 db.ref("games").on("value", snapshot => {
   const data = snapshot.val() || {};
-  games = Object.values(data);
+  allGames = Object.keys(data).map(key => ({ ...data[key], id: key }));
   renderGames();
 });
 </script>
-
 </body>
 </html>
