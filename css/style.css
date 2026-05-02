@@ -40,12 +40,15 @@ md-outlined-text-field#search {
   --md-outlined-text-field-focus-outline-color: var(--md-sys-color-primary);
 }
 
-#theme-toggle, #auth-btn {
+#theme-toggle, #auth-btn, #discord-btn {
   --md-icon-button-icon-color: var(--md-sys-color-on-surface);
 }
 
-#theme-toggle md-icon, #auth-btn md-icon {
-  font-variation-settings: 'wght' 500;
+#discord-btn md-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-sys-color-on-surface);
 }
 
 .games-grid {
@@ -82,9 +85,7 @@ md-outlined-text-field#search {
 }
 
 @media (min-width: 768px) {
-  .game-card.pinned {
-    grid-column: span 2;
-  }
+  .game-card.pinned { grid-column: span 2; }
 }
 
 .game-card img {
@@ -127,6 +128,7 @@ md-outlined-text-field#search {
   bottom: 32px;
   right: 32px;
   z-index: 100;
+  --md-fab-container-shape: 16px;
 }
 
 .modal-overlay {
@@ -189,3 +191,4 @@ label {
   user-select: none;
   color: var(--md-sys-color-on-surface);
 }
+
