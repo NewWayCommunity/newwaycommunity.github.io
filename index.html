@@ -1,361 +1,70 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Way Community</title>
-
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #0d0d0d; color: white; }
-
-    header {
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-      text-shadow: 0 0 10px #8a2eff;
-      font-weight: bold;
-    }
-
-    .search-container {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 20px;
-      flex-wrap: wrap;
-    }
-
-    input, select {
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: #1a1a1a;
-      color: white;
-      box-shadow: 0 0 10px #6a00ff;
-      outline: none;
-    }
-
-    .games {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 20px;
-    }
-
-    .card {
-      background: #111;
-      border-radius: 15px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 0 15px rgba(138,46,255,0.3);
-      transition: 0.3s;
-    }
-
-    /* Estilo para fixados */
-    .card.pinned { border: 2px solid #8a2eff; box-shadow: 0 0 20px #8a2eff; }
-    .pin-badge { 
-      background: #8a2eff; color: white; padding: 2px 8px; 
-      border-radius: 5px; font-size: 10px; position: absolute; top: 10px; left: 10px;
-    }
-
-    .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
-    .card-content { padding: 15px; }
-
-    .actions {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      gap: 5px;
-      z-index: 10;
-    }
-
-    .actions button {
-      background: rgba(0,0,0,0.8);
-      border: none;
-      color: white;
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .modal-content {
-      background: #111;
-      padding: 20px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 450px;
-      position: relative;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal h3 { margin-bottom: 15px; }
-    .modal input { width: 100%; margin: 8px 0; }
-    .modal button { width: 100%; padding: 12px; background: #6a00ff; border: none; border-radius: 8px; color: white; cursor: pointer; margin-top: 10px; }
-
-    .admin-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #6a00ff;
-      border: none;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      cursor: pointer;
-      color: white;
-      font-weight: bold;
-      z-index: 90;
-    }
-
-    .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; }
-    .link-btn { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #6a00ff; border-radius: 6px; color: white; text-decoration: none; margin-right: 5px; font-size: 14px; }
-    
-    .pinned-toggle { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
-    .pinned-toggle input { width: auto; }
-  </style>
+  <link rel="stylesheet" href="css/light.css">
+  <link rel="stylesheet" href="css/dark.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<header>🎮 New Way Community</header>
-
-<div class="search-container">
-  <input type="text" id="search" placeholder="Pesquisar jogos..." oninput="renderGames()">
-  <select id="categoryFilter" onchange="renderGames()">
-    <option value="">Todas categorias</option>
-  </select>
-</div>
-
-<section class="games" id="games"></section>
-
-<button class="admin-btn" onclick="openAddModal()">+</button>
-<button class="admin-btn" onclick="logout()" style="right:80px;">⛔</button>
-
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h3 id="modalTitle">Adicionar Jogo</h3>
-    <span class="close-btn" onclick="closeModal()">✖</span>
-
-    <input id="gameId" type="hidden">
-    <input id="name" placeholder="Nome do jogo">
-    <input id="desc" placeholder="Descrição">
-    <input id="category" placeholder="Categoria (ex: RPG, Ação)">
-
-    <div id="linksContainer">
-      <input class="link-input" placeholder="Link">
+  <header>
+    <div class="header-content">
+      <h1>New Way Community</h1>
+      <md-icon-button id="theme-toggle" onclick="cycleTheme()">
+        <md-icon id="theme-icon">brightness_auto</md-icon>
+      </md-icon-button>
     </div>
-    <button style="background:#444" onclick="addLinkField()">+ Link</button>
+  </header>
 
-    <div class="pinned-toggle">
-      <input type="checkbox" id="pinned"> <label for="pinned">Fixar no topo</label>
-    </div>
-
-    <p style="font-size:12px; color: #888; margin-top:10px;">Banner (opcional se estiver editando):</p>
-    <input id="banner" type="file" accept="image/*">
-    
-    <button onclick="saveGame()" id="saveBtn">Salvar Jogo</button>
+  <div class="search-bar">
+    <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="renderGames()">
+      <md-icon slot="leading-icon">search</md-icon>
+    </md-outlined-text-field>
   </div>
-</div>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyC8J21BmeYHfco3X1qx6_KCi4RU1wqOoIo",
-  authDomain: "new-way-community-7e8a0.firebaseapp.com",
-  databaseURL: "https://new-way-community-7e8a0-default-rtdb.firebaseio.com",
-  projectId: "new-way-community-7e8a0",
-  storageBucket: "new-way-community-7e8a0.firebasestorage.app",
-  messagingSenderId: "921355438217",
-  appId: "1:921355438217:web:63bcae438ef6c14ee85e58"
-};
+  <main class="games-grid" id="games">
+    <div id="loading-spinner" style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 48px;">
+      <md-circular-progress indeterminate></md-circular-progress>
+    </div>
+  </main>
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-let allGames = [];
-let isAdmin = false;
+  <md-fab id="add-btn" icon="add" onclick="openAddModal()" label="Adicionar"></md-fab>
 
-// Observador de Autenticação
-firebase.auth().onAuthStateChanged(user => {
-  isAdmin = !!user;
-  renderGames();
-});
+  <div class="modal-overlay" id="modal">
+    <md-elevated-card class="modal-content">
+      <h2 style="margin:0 0 16px 0">Adicionar Jogo</h2>
+      <form id="gameForm" class="form-scroll" onsubmit="event.preventDefault()">
+        <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
+        <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3"></md-outlined-text-field>
+        
+        <div id="linksWrapper">
+          <p style="font-size:14px; margin:0 0 8px 0; opacity:0.7">Links do Jogo (Máx. 4)</p>
+          <div id="linksContainer"></div>
+          <md-text-button type="button" id="addLinkBtn" onclick="addLinkField()">
+            <md-icon slot="icon">add</md-icon> Adicionar Link
+          </md-text-button>
+        </div>
 
-function login() {
-  const email = prompt("Email:");
-  const senha = prompt("Senha:");
-  if(email && senha) {
-    firebase.auth().signInWithEmailAndPassword(email, senha).catch(() => alert("Login inválido"));
-  }
-}
-
-function logout() { firebase.auth().signOut(); }
-
-function openAddModal() {
-  if(!isAdmin) return login();
-  document.getElementById("modalTitle").innerText = "Adicionar Jogo";
-  document.getElementById("gameId").value = "";
-  document.getElementById("name").value = "";
-  document.getElementById("desc").value = "";
-  document.getElementById("category").value = "";
-  document.getElementById("pinned").checked = false;
-  document.getElementById("linksContainer").innerHTML = '<input class="link-input" placeholder="Link">';
-  document.getElementById("modal").style.display = "flex";
-}
-
-function closeModal() { document.getElementById("modal").style.display = "none"; }
-
-function addLinkField(val = "") {
-  const input = document.createElement("input");
-  input.className = "link-input";
-  input.placeholder = "Link";
-  input.value = val;
-  document.getElementById("linksContainer").appendChild(input);
-}
-
-// Lógica de Renderização com Filtro e Busca
-function renderGames() {
-  const gamesEl = document.getElementById("games");
-  const searchTerm = document.getElementById("search").value.toLowerCase();
-  const catFilter = document.getElementById("categoryFilter").value;
-  
-  gamesEl.innerHTML = "";
-
-  // 1. Filtrar e 2. Ordenar (Fixados primeiro)
-  let filtered = allGames.filter(g => {
-    const matchSearch = g.name.toLowerCase().includes(searchTerm) || g.desc.toLowerCase().includes(searchTerm);
-    const matchCat = catFilter === "" || g.category === catFilter;
-    return matchSearch && matchCat;
-  });
-
-  filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-
-  filtered.forEach(game => {
-    const div = document.createElement("div");
-    div.className = `card ${game.pinned ? 'pinned' : ''}`;
-
-    const linksHTML = (game.links || []).map((l, i) =>
-      `<a href="${l}" target="_blank" class="link-btn">Link ${i+1}</a>`
-    ).join("");
-
-    div.innerHTML = `
-      ${game.pinned ? '<span class="pin-badge">FIXADO</span>' : ''}
-      ${isAdmin ? `<div class="actions">
-        <button onclick="editGame('${game.id}')">✏️</button>
-        <button onclick="deleteGame('${game.id}')">🗑️</button>
-      </div>` : ""}
-      <img src="${game.banner}">
-      <div class="card-content">
-        <h3>${game.name}</h3>
-        <p style="font-size: 14px; color: #ccc; margin: 5px 0;">${game.desc}</p>
-        <small style="color: #8a2eff">#${game.category || 'Geral'}</small><br>
-        ${linksHTML}
+        <div style="padding:16px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid var(--md-sys-color-outline-variant);">
+          <label style="display:block; margin-bottom:8px; font-size:14px;">Banner do Jogo</label>
+          <input id="banner" type="file" accept="image/*">
+        </div>
+      </form>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
+        <md-text-button onclick="closeModal()">Cancelar</md-text-button>
+        <md-filled-button onclick="saveGame()">Salvar</md-filled-button>
       </div>
-    `;
-    gamesEl.appendChild(div);
-  });
+    </md-elevated-card>
+  </div>
 
-  updateCategoryList();
-}
-
-function updateCategoryList() {
-  const select = document.getElementById("categoryFilter");
-  const current = select.value;
-  const cats = [...new Set(allGames.map(g => g.category).filter(c => c))];
-  
-  select.innerHTML = '<option value="">Todas categorias</option>';
-  cats.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.innerText = c;
-    select.appendChild(opt);
-  });
-  select.value = current;
-}
-
-// Salvar / Editar
-function saveGame() {
-  const id = document.getElementById("gameId").value;
-  const name = document.getElementById("name").value;
-  const desc = document.getElementById("desc").value;
-  const category = document.getElementById("category").value;
-  const pinned = document.getElementById("pinned").checked;
-  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
-  const file = document.getElementById("banner").files[0];
-
-  const uploadData = (imgUrl) => {
-    const data = { name, desc, links, category, pinned, date: Date.now() };
-    if (imgUrl) data.banner = imgUrl;
-
-    if (id) {
-      db.ref("games/" + id).update(data);
-    } else {
-      const newRef = db.ref("games").push();
-      data.id = newRef.key;
-      newRef.set(data);
-    }
-    closeModal();
-  };
-
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => uploadData(e.target.result);
-    reader.readAsDataURL(file);
-  } else if (id) {
-    uploadData(null); // Mantém a imagem atual na edição
-  } else {
-    alert("Selecione uma imagem!");
-  }
-}
-
-function deleteGame(id) {
-  if(confirm("Deseja excluir este jogo?")) db.ref("games/" + id).remove();
-}
-
-function editGame(id) {
-  const game = allGames.find(g => g.id === id);
-  if(!game) return;
-
-  document.getElementById("modalTitle").innerText = "Editar Jogo";
-  document.getElementById("gameId").value = game.id;
-  document.getElementById("name").value = game.name;
-  document.getElementById("desc").value = game.desc;
-  document.getElementById("category").value = game.category || "";
-  document.getElementById("pinned").checked = !!game.pinned;
-  
-  const container = document.getElementById("linksContainer");
-  container.innerHTML = "";
-  if(game.links && game.links.length > 0) {
-    game.links.forEach(l => addLinkField(l));
-  } else {
-    addLinkField();
-  }
-
-  document.getElementById("modal").style.display = "flex";
-}
-
-// Sincronização em tempo real
-db.ref("games").on("value", snapshot => {
-  const data = snapshot.val() || {};
-  allGames = Object.keys(data).map(key => ({ ...data[key], id: key }));
-  renderGames();
-});
-</script>
+  <script src="js/app.js"></script>
 </body>
 </html>
