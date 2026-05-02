@@ -13,6 +13,7 @@ const db = firebase.database();
 let allGames = [];
 let isInitialLoad = true;
 let isAdmin = false;
+let lastAttemptedPass = "";
 
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
@@ -33,68 +34,77 @@ function closeLoginModal() {
   document.getElementById('login-modal').classList.remove('active');
 }
 
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function login() {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
+  const emailField = document.getElementById('login-email');
+  const passField = document.getElementById('login-pass');
+  const email = emailField.value.trim();
+  const pass = passField.value;
+
+  emailField.error = passField.error = false;
+  emailField.errorText = passField.errorText = "";
+
+  if (!email || !validateEmail(email)) {
+    emailField.error = true;
+    emailField.errorText = "E-mail inválido ou vazio.";
+    return;
+  }
+  if (!pass) {
+    passField.error = true;
+    passField.errorText = "A senha não pode estar vazia.";
+    return;
+  }
+  if (pass === lastAttemptedPass && passField.errorText === "Senha incorreta.") {
+    passField.error = true;
+    passField.errorText = "Altere a senha antes de tentar novamente.";
+    return;
+  }
+
   firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(() => {
       closeLoginModal();
-      document.getElementById('login-email').value = "";
-      document.getElementById('login-pass').value = "";
+      emailField.value = passField.value = lastAttemptedPass = "";
     })
-    .catch(err => alert(err.message));
+    .catch(err => {
+      passField.error = true;
+      lastAttemptedPass = pass;
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        passField.errorText = "Senha incorreta.";
+      } else if (err.code === 'auth/user-not-found') {
+        passField.errorText = "Usuário não encontrado.";
+      } else {
+        passField.errorText = "Erro ao entrar: " + err.message;
+      }
+    });
 }
 
 const themes = ['auto', 'light', 'dark'];
 const themeIcons = { auto: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' };
 
 function applyTheme(theme) {
-    const html = document.documentElement;
-    const icon = document.getElementById('theme-icon');
-    let target;
-
-    if (theme === 'auto') {
-        // Sistem ayarını kontrol et
-        target = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-        target = theme;
-    }
-
-    html.classList.remove('dark', 'light');
-    html.classList.add(target);
-    if (icon) icon.innerText = themeIcons[theme];
+  const html = document.documentElement;
+  const icon = document.getElementById('theme-icon');
+  let target = theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+  html.classList.remove('dark', 'light');
+  html.classList.add(target);
+  if (icon) icon.innerText = themeIcons[theme];
 }
-
-window.cycleTheme = () => {
-    let current = localStorage.getItem('user-theme') || 'auto';
-    let next = themes[(themes.indexOf(current) + 1) % themes.length];
-    
-    if (next === 'auto') {
-        localStorage.removeItem('user-theme');
-    } else {
-        localStorage.setItem('user-theme', next);
-    }
-    
-    applyTheme(next);
-};
-
-applyTheme(localStorage.getItem('user-theme') || 'auto');
-
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    const savedTheme = localStorage.getItem('user-theme') || 'auto';
-    if (savedTheme === 'auto') {
-        applyTheme('auto');
-    }
-});
-
 
 window.cycleTheme = () => {
   let current = localStorage.getItem('user-theme') || 'auto';
   let next = themes[(themes.indexOf(current) + 1) % themes.length];
-  localStorage.setItem('user-theme', next);
+  if (next === 'auto') localStorage.removeItem('user-theme');
+  else localStorage.setItem('user-theme', next);
   applyTheme(next);
 };
+
 applyTheme(localStorage.getItem('user-theme') || 'auto');
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if ((localStorage.getItem('user-theme') || 'auto') === 'auto') applyTheme('auto');
+});
 
 function renderGames() {
   const grid = document.getElementById('games');
@@ -102,28 +112,25 @@ function renderGames() {
   if (isInitialLoad) return;
   const filtered = allGames.filter(g => g.name.toLowerCase().includes(searchTerm));
   grid.innerHTML = "";
-  if (filtered.length === 0) {
-    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; opacity: 0.6;">Nenhum jogo encontrado.</p>`;
-    return;
-  }
+  
   filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).forEach(game => {
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
-            ${game.pinned ? '<div class="pin-icon">push_pin</div>' : ''}
-            ${isAdmin ? `
-                <div style="position:absolute; top:8px; left:8px; z-index:10; display:flex; gap:4px;">
-                    <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
-                    <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
-                </div>` : ''}
-            <img src="${game.banner}">
-            <div class="card-body">
-                <h3>${game.name}</h3>
-                <p style="margin:12px 0; font-size:14px; opacity:0.8; color: var(--md-sys-color-on-surface-variant);">${game.desc || ''}</p>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
-                </div>
-            </div>`;
+      ${game.pinned ? '<div class="pin-icon"><md-icon style="font-size:18px;">push_pin</md-icon></div>' : ''}
+      ${isAdmin ? `
+        <div class="admin-actions">
+          <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
+          <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
+        </div>` : ''}
+      <img src="${game.banner}">
+      <div class="card-body">
+        <h3>${game.name}</h3>
+        <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+        </div>
+      </div>`;
     grid.appendChild(card);
   });
 }
@@ -157,39 +164,27 @@ window.editGame = (id) => {
   document.getElementById('modal').classList.add('active');
 };
 
-window.deleteGame = (id) => { if (confirm("Excluir?")) db.ref("games/" + id).remove(); };
+window.deleteGame = (id) => { if (confirm("Deseja excluir?")) db.ref("games/" + id).remove(); };
 
 window.addLinkField = (val = "") => {
   const container = document.getElementById('linksContainer');
   if (container.querySelectorAll('.link-input').length >= 4) return;
   const row = document.createElement('div');
   row.style = "display:flex; align-items:center; gap:8px; margin-bottom:8px;";
-  row.innerHTML = `
-        <md-outlined-text-field label="URL" class="link-input" style="flex:1" value="${val}"></md-outlined-text-field>
-        <md-icon-button type="button" onclick="this.parentElement.remove(); document.getElementById('addLinkBtn').disabled = false;">
-            <md-icon>delete</md-icon>
-        </md-icon-button>`;
+  row.innerHTML = `<md-outlined-text-field label="URL" class="link-input" style="flex:1" value="${val}"></md-outlined-text-field>
+    <md-icon-button type="button" onclick="this.parentElement.remove(); document.getElementById('addLinkBtn').disabled = false;"><md-icon>delete</md-icon></md-icon-button>`;
   container.appendChild(row);
   if (container.querySelectorAll('.link-input').length >= 4) document.getElementById('addLinkBtn').disabled = true;
 };
 
 window.saveGame = () => {
-  const id = document.getElementById("gameId").value;
-  const name = document.getElementById("name").value;
-  const desc = document.getElementById("desc").value;
-  const pinned = document.getElementById("pinned").checked;
-  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
-  const file = document.getElementById("banner").files[0];
+  const id = document.getElementById("gameId").value, name = document.getElementById("name").value, desc = document.getElementById("desc").value, pinned = document.getElementById("pinned").checked;
+  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v), file = document.getElementById("banner").files[0];
   const pushData = (imgUrl) => {
     const data = { name, desc, links, pinned };
     if (imgUrl) data.banner = imgUrl;
-    if (id) db.ref("games/" + id).update(data);
-    else db.ref("games").push(data);
+    if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
     closeModal();
   };
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => pushData(e.target.result);
-    reader.readAsDataURL(file);
-  } else pushData(null);
+  if (file) { const reader = new FileReader(); reader.onload = (e) => pushData(e.target.result); reader.readAsDataURL(file); } else pushData(null);
 };
