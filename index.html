@@ -4,11 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Way Community</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/android-chrome-512x512.png">
+  
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  
   <script type="module" src="https://esm.run/@material/web/all.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
   <link rel="stylesheet" href="css/light.css">
   <link rel="stylesheet" href="css/dark.css">
   <link rel="stylesheet" href="css/style.css">
@@ -18,9 +28,14 @@
   <header>
     <div class="header-content">
       <h1>New Way Community</h1>
-      <md-icon-button id="theme-toggle" onclick="cycleTheme()">
-        <md-icon id="theme-icon">brightness_auto</md-icon>
-      </md-icon-button>
+      <div style="display: flex; gap: 8px;">
+        <md-icon-button id="auth-btn" onclick="handleAuthAction()">
+          <md-icon id="auth-icon">admin_panel_settings</md-icon>
+        </md-icon-button>
+        <md-icon-button id="theme-toggle" onclick="cycleTheme()">
+          <md-icon id="theme-icon">brightness_auto</md-icon>
+        </md-icon-button>
+      </div>
     </div>
   </header>
 
@@ -36,15 +51,29 @@
     </div>
   </main>
 
-  <md-fab id="add-btn" icon="add" onclick="openAddModal()" label="Adicionar"></md-fab>
+  <md-fab id="add-btn" icon="add" onclick="openAddModal()" label="Adicionar" style="display: none;"></md-fab>
+
+  <div class="modal-overlay" id="login-modal">
+    <md-elevated-card class="modal-content">
+      <h2 style="margin:0 0 16px 0">Acesso Administrativo</h2>
+      <div class="form-scroll">
+        <md-outlined-text-field id="login-email" label="Email" type="email"></md-outlined-text-field>
+        <md-outlined-text-field id="login-pass" label="Senha" type="password"></md-outlined-text-field>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
+        <md-text-button onclick="closeLoginModal()">Cancelar</md-text-button>
+        <md-filled-button onclick="login()">Entrar</md-filled-button>
+      </div>
+    </md-elevated-card>
+  </div>
 
   <div class="modal-overlay" id="modal">
     <md-elevated-card class="modal-content">
-      <h2 style="margin:0 0 16px 0">Adicionar Jogo</h2>
+      <h2 id="modalTitle" style="margin:0 0 16px 0">Adicionar Jogo</h2>
       <form id="gameForm" class="form-scroll" onsubmit="event.preventDefault()">
+        <input type="hidden" id="gameId">
         <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
         <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3"></md-outlined-text-field>
-        
         <div id="linksWrapper">
           <p style="font-size:14px; margin:0 0 8px 0; opacity:0.7">Links do Jogo (Máx. 4)</p>
           <div id="linksContainer"></div>
@@ -52,15 +81,18 @@
             <md-icon slot="icon">add</md-icon> Adicionar Link
           </md-text-button>
         </div>
-
+        <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;">
+            <md-checkbox id="pinned"></md-checkbox>
+            <label for="pinned" style="font-size: 14px;">Fixar no topo</label>
+        </div>
         <div style="padding:16px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid var(--md-sys-color-outline-variant);">
-          <label style="display:block; margin-bottom:8px; font-size:14px;">Banner do Jogo</label>
+          <label style="display:block; margin-bottom:8px; font-size:14px;">Banner</label>
           <input id="banner" type="file" accept="image/*">
         </div>
       </form>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
         <md-text-button onclick="closeModal()">Cancelar</md-text-button>
-        <md-filled-button onclick="saveGame()">Salvar</md-filled-button>
+        <md-filled-button onclick="saveGame()" id="saveBtn">Salvar</md-filled-button>
       </div>
     </md-elevated-card>
   </div>

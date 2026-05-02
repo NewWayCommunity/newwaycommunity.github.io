@@ -40,11 +40,11 @@ md-outlined-text-field#search {
   --md-outlined-text-field-focus-outline-color: var(--md-sys-color-primary);
 }
 
-#theme-toggle {
+#theme-toggle, #auth-btn {
   --md-icon-button-icon-color: var(--md-sys-color-on-surface);
 }
 
-#theme-toggle md-icon {
+#theme-toggle md-icon, #auth-btn md-icon {
   font-variation-settings: 'wght' 500;
 }
 
@@ -180,14 +180,12 @@ md-outlined-text-field#search {
   margin-bottom: 8px;
 }
 
-/* Link Silme Butonu Hizalaması */
-.link-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Form içindeki inputlar arası denge */
 md-outlined-text-field {
   width: 100%;
+}
+
+label {
+  cursor: pointer;
+  user-select: none;
+  color: var(--md-sys-color-on-surface);
 }
