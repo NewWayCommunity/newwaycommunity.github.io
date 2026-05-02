@@ -49,13 +49,44 @@ const themes = ['auto', 'light', 'dark'];
 const themeIcons = { auto: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' };
 
 function applyTheme(theme) {
-  const html = document.documentElement;
-  let target = theme;
-  if (theme === 'auto') target = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  html.classList.remove('dark', 'light');
-  html.classList.add(target);
-  document.getElementById('theme-icon').innerText = themeIcons[theme];
+    const html = document.documentElement;
+    const icon = document.getElementById('theme-icon');
+    let target;
+
+    if (theme === 'auto') {
+        // Sistem ayarını kontrol et
+        target = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } else {
+        target = theme;
+    }
+
+    html.classList.remove('dark', 'light');
+    html.classList.add(target);
+    if (icon) icon.innerText = themeIcons[theme];
 }
+
+window.cycleTheme = () => {
+    let current = localStorage.getItem('user-theme') || 'auto';
+    let next = themes[(themes.indexOf(current) + 1) % themes.length];
+    
+    if (next === 'auto') {
+        localStorage.removeItem('user-theme');
+    } else {
+        localStorage.setItem('user-theme', next);
+    }
+    
+    applyTheme(next);
+};
+
+applyTheme(localStorage.getItem('user-theme') || 'auto');
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    const savedTheme = localStorage.getItem('user-theme') || 'auto';
+    if (savedTheme === 'auto') {
+        applyTheme('auto');
+    }
+});
+
 
 window.cycleTheme = () => {
   let current = localStorage.getItem('user-theme') || 'auto';
