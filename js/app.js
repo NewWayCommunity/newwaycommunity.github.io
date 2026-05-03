@@ -110,10 +110,13 @@ function renderGames() {
   const grid = document.getElementById('games');
   const searchTerm = document.getElementById('search').value.toLowerCase();
   if (isInitialLoad) return;
+  
   const filtered = allGames.filter(g => g.name.toLowerCase().includes(searchTerm));
   grid.innerHTML = "";
   
-  filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).forEach(game => {
+  const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  sorted.forEach(game => {
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
@@ -123,7 +126,7 @@ function renderGames() {
           <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
           <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
         </div>` : ''}
-      <img src="${game.banner}">
+      ${game.banner ? `<img src="${game.banner}">` : ''}
       <div class="card-body">
         <h3>${game.name}</h3>
         <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
@@ -146,6 +149,9 @@ window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = "Adicionar Jogo";
   document.getElementById("gameId").value = "";
   document.getElementById("gameForm").reset();
+  const nameField = document.getElementById("name");
+  nameField.error = false;
+  nameField.errorText = "";
   document.getElementById("linksContainer").innerHTML = "";
   document.getElementById('modal').classList.add('active');
 };
@@ -178,13 +184,37 @@ window.addLinkField = (val = "") => {
 };
 
 window.saveGame = () => {
-  const id = document.getElementById("gameId").value, name = document.getElementById("name").value, desc = document.getElementById("desc").value, pinned = document.getElementById("pinned").checked;
-  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v), file = document.getElementById("banner").files[0];
+  const id = document.getElementById("gameId").value;
+  const nameField = document.getElementById("name");
+  const name = nameField.value.trim();
+  const desc = document.getElementById("desc").value;
+  const pinned = document.getElementById("pinned").checked;
+  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
+  const file = document.getElementById("banner").files[0];
+
+  if (!name) {
+    nameField.error = true;
+    nameField.errorText = "O nome do jogo é obrigatório.";
+    return;
+  }
+
   const pushData = (imgUrl) => {
     const data = { name, desc, links, pinned };
-    if (imgUrl) data.banner = imgUrl;
+    if (imgUrl) {
+      data.banner = imgUrl;
+    } else if (id) {
+      const oldGame = allGames.find(g => g.id === id);
+      if (oldGame && oldGame.banner) data.banner = oldGame.banner;
+    }
     if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
     closeModal();
   };
-  if (file) { const reader = new FileReader(); reader.onload = (e) => pushData(e.target.result); reader.readAsDataURL(file); } else pushData(null);
+
+  if (file) { 
+    const reader = new FileReader(); 
+    reader.onload = (e) => pushData(e.target.result); 
+    reader.readAsDataURL(file); 
+  } else {
+    pushData(null);
+  }
 };
