@@ -14,7 +14,9 @@ let allGames = [];
 let isInitialLoad = true;
 let isAdmin = false;
 let lastAttemptedPass = "";
-let visibleCount = 8; // Controle do sistema "Mostrar Mais"
+let visibleCount = 8;
+let lastCategoryList = "";
+let searchTimer;
 
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
@@ -93,24 +95,29 @@ window.cycleTheme = () => {
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
 
-// SISTEMA DE CATEGORIAS DINÂMICAS
 function updateCategoryFilter() {
   const filterSelect = document.getElementById('filter-category');
   const currentVal = filterSelect.value;
-  
-  // Extrai categorias únicas dos jogos existentes
   const categories = [...new Set(allGames.map(g => g.category).filter(c => c))].sort();
-  
-  let options = `<md-select-option value="Todas" ${currentVal === 'Todas' ? 'selected' : ''}><div slot="headline">Todas</div></md-select-option>`;
-  
-  categories.forEach(cat => {
-    options += `<md-select-option value="${cat}" ${currentVal === cat ? 'selected' : ''}><div slot="headline">${cat}</div></md-select-option>`;
-  });
+  const catString = categories.join(",");
 
-  if (filterSelect.innerHTML !== options) {
+  if (lastCategoryList !== catString) {
+    let options = `<md-select-option value="Todas" ${currentVal === 'Todas' ? 'selected' : ''}><div slot="headline">Todas</div></md-select-option>`;
+    categories.forEach(cat => {
+      options += `<md-select-option value="${cat}" ${currentVal === cat ? 'selected' : ''}><div slot="headline">${cat}</div></md-select-option>`;
+    });
     filterSelect.innerHTML = options;
+    lastCategoryList = catString;
   }
 }
+
+window.handleSearch = () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    visibleCount = 8;
+    renderGames();
+  }, 400);
+};
 
 function renderGames() {
   const grid = document.getElementById('games');
@@ -129,8 +136,6 @@ function renderGames() {
   });
   
   const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-  
-  // Lógica "Mostrar Mais"
   const displayList = sorted.slice(0, visibleCount);
   grid.innerHTML = "";
   
@@ -144,7 +149,7 @@ function renderGames() {
           <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
           <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
         </div>` : ''}
-      ${game.banner ? `<img src="${game.banner}">` : ''}
+      ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility: auto;">` : ''}
       <div class="card-body">
         <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
         <h3 style="margin: 4px 0;">${game.name}</h3>
@@ -156,7 +161,6 @@ function renderGames() {
     grid.appendChild(card);
   });
 
-  // Exibe botão se houver mais itens para carregar
   if (loadMoreBtn) {
     loadMoreBtn.style.display = sorted.length > visibleCount ? 'flex' : 'none';
   }
@@ -213,16 +217,31 @@ window.addLinkField = (val = "") => {
 window.saveGame = () => {
   const id = document.getElementById("gameId").value;
   const nameField = document.getElementById("name");
+  const descField = document.getElementById("desc");
+  const categoryField = document.getElementById("category");
+  
   const name = nameField.value.trim();
-  const desc = document.getElementById("desc").value;
-  const category = document.getElementById("category").value.trim() || "Geral";
+  const desc = descField.value.trim();
+  const category = categoryField.value.trim() || "Geral";
   const pinned = document.getElementById("pinned").checked;
   const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
   const file = document.getElementById("banner").files[0];
 
-  if (!name) {
+  nameField.error = descField.error = categoryField.error = false;
+
+  if (!name || name.length > 30) {
     nameField.error = true;
-    nameField.errorText = "O nome do jogo é obrigatório.";
+    nameField.errorText = !name ? "O nome é obrigatório." : "Máximo 30 caracteres.";
+    return;
+  }
+  if (desc.length > 60) {
+    descField.error = true;
+    descField.errorText = "Máximo 60 caracteres.";
+    return;
+  }
+  if (category.length > 20) {
+    categoryField.error = true;
+    categoryField.errorText = "Máximo 20 caracteres.";
     return;
   }
 
@@ -236,7 +255,7 @@ window.saveGame = () => {
     }
     if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
     closeModal();
-    visibleCount = 8; // Reseta o scroll ao salvar
+    visibleCount = 8;
   };
 
   if (file) { 
@@ -247,3 +266,4 @@ window.saveGame = () => {
     pushData(null);
   }
 };
+    
