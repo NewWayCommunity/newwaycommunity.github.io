@@ -66,15 +66,8 @@
     <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="renderGames()" style="flex: 1;">
       <md-icon slot="leading-icon">search</md-icon>
     </md-outlined-text-field>
-    
     <md-outlined-select id="filter-category" onchange="renderGames()" style="min-width: 140px;">
-      <md-select-option value="Todas" selected>Todas</md-select-option>
-      <md-select-option value="Ação">Ação</md-select-option>
-      <md-select-option value="Aventura">Aventura</md-select-option>
-      <md-select-option value="Estratégia">Estratégia</md-select-option>
-      <md-select-option value="RPG">RPG</md-select-option>
-      <md-select-option value="Simulação">Simulação</md-select-option>
-      <md-select-option value="Outros">Outros</md-select-option>
+      <md-select-option value="Todas" selected><div slot="headline">Todas</div></md-select-option>
     </md-outlined-select>
   </div>
 
@@ -83,6 +76,12 @@
       <md-circular-progress indeterminate></md-circular-progress>
     </div>
   </main>
+
+  <div style="display: flex; justify-content: center; margin: 32px 0;">
+    <md-filled-button id="load-more-btn" onclick="loadMore()" style="display: none;">
+      Mostrar Mais
+    </md-filled-button>
+  </div>
 
   <md-fab id="add-btn" onclick="openAddModal()" style="display: none;">
     <md-icon slot="icon">add</md-icon>
@@ -109,16 +108,8 @@
         <input type="hidden" id="gameId">
         <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
         <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3"></md-outlined-text-field>
+        <md-outlined-text-field id="category" label="Categoria (Ex: Ação, RPG, Emulador)"></md-outlined-text-field>
         
-        <md-outlined-select id="category" label="Categoria" style="width: 100%; margin: 8px 0;">
-          <md-select-option value="Ação">Ação</md-select-option>
-          <md-select-option value="Aventura">Aventura</md-select-option>
-          <md-select-option value="Estratégia">Estratégia</md-select-option>
-          <md-select-option value="RPG">RPG</md-select-option>
-          <md-select-option value="Simulação">Simulação</md-select-option>
-          <md-select-option value="Outros" selected>Outros</md-select-option>
-        </md-outlined-select>
-
         <div id="linksWrapper">
           <p style="font-size:14px; margin:0 0 8px 0; opacity:0.7">Links do Jogo (Máx. 4)</p>
           <div id="linksContainer"></div>
