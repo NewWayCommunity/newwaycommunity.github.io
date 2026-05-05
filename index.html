@@ -38,6 +38,11 @@
   <link rel="stylesheet" href="css/light.css">
   <link rel="stylesheet" href="css/dark.css">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    md-outlined-select::part(menu) {
+      max-height: 250px;
+    }
+  </style>
 </head>
 <body>
 
@@ -63,7 +68,7 @@
   </header>
 
   <div class="search-bar" style="display: flex; gap: 8px; align-items: center;">
-    <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="renderGames()" style="flex: 1;">
+    <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="handleSearch()" style="flex: 1;">
       <md-icon slot="leading-icon">search</md-icon>
     </md-outlined-text-field>
     <md-outlined-select id="filter-category" onchange="renderGames()" style="min-width: 140px;">
@@ -106,9 +111,9 @@
       <h2 id="modalTitle" style="margin:0 0 16px 0">Adicionar Jogo</h2>
       <form id="gameForm" class="form-scroll" onsubmit="event.preventDefault()">
         <input type="hidden" id="gameId">
-        <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
-        <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3"></md-outlined-text-field>
-        <md-outlined-text-field id="category" label="Categoria (Ex: Ação, RPG, Emulador)"></md-outlined-text-field>
+        <md-outlined-text-field id="name" label="Nome" maxlength="30"></md-outlined-text-field>
+        <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3" maxlength="60"></md-outlined-text-field>
+        <md-outlined-text-field id="category" label="Categoria (Ex: Ação, RPG, Emulador)" maxlength="20"></md-outlined-text-field>
         
         <div id="linksWrapper">
           <p style="font-size:14px; margin:0 0 8px 0; opacity:0.7">Links do Jogo (Máx. 4)</p>
@@ -135,4 +140,5 @@
 
   <script src="js/app.js"></script>
 </body>
-</html>
+  </html>
+  
