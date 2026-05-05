@@ -120,10 +120,18 @@ window.handleSearch = () => {
 };
 
 window.likeGame = (id) => {
+  const likedGames = JSON.parse(localStorage.getItem('likedGames') || '{}');
   const gameRef = db.ref("games/" + id + "/likes");
-  gameRef.transaction((currentLikes) => {
-    return (currentLikes || 0) + 1;
-  });
+  
+  if (likedGames[id]) {
+    gameRef.transaction((current) => (current || 1) - 1);
+    delete likedGames[id];
+  } else {
+    gameRef.transaction((current) => (current || 0) + 1);
+    likedGames[id] = true;
+  }
+  
+  localStorage.setItem('likedGames', JSON.stringify(likedGames));
 };
 
 function renderGames() {
@@ -131,6 +139,7 @@ function renderGames() {
   const searchTerm = document.getElementById('search').value.toLowerCase();
   const categoryFilter = document.getElementById('filter-category').value;
   const loadMoreBtn = document.getElementById('load-more-btn');
+  const likedGames = JSON.parse(localStorage.getItem('likedGames') || '{}');
 
   if (isInitialLoad) return;
   
@@ -147,6 +156,7 @@ function renderGames() {
   grid.innerHTML = "";
   
   displayList.forEach(game => {
+    const isLiked = !!likedGames[game.id];
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
@@ -165,10 +175,10 @@ function renderGames() {
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
           </div>
-          <md-icon-button onclick="likeGame('${game.id}')">
-            <md-icon>favorite</md-icon>
-            <span style="font-size:12px; margin-left:4px;">${game.likes || 0}</span>
-          </md-icon-button>
+          <div onclick="likeGame('${game.id}')" style="display:flex; align-items:center; cursor:pointer; user-select:none; gap:6px;">
+            <md-icon style="font-size:24px; color:${isLiked ? '#ff5252' : 'inherit'}; font-variation-settings: 'FILL' ${isLiked ? 1 : 0}">${isLiked ? 'favorite' : 'favorite_border'}</md-icon>
+            <span style="font-size:16px; font-weight:500; opacity:0.9;">${game.likes || 0}</span>
+          </div>
         </div>
       </div>`;
     grid.appendChild(card);
