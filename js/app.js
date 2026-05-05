@@ -119,6 +119,13 @@ window.handleSearch = () => {
   }, 400);
 };
 
+window.likeGame = (id) => {
+  const gameRef = db.ref("games/" + id + "/likes");
+  gameRef.transaction((currentLikes) => {
+    return (currentLikes || 0) + 1;
+  });
+};
+
 function renderGames() {
   const grid = document.getElementById('games');
   const searchTerm = document.getElementById('search').value.toLowerCase();
@@ -154,8 +161,14 @@ function renderGames() {
         <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
         <h3 style="margin: 4px 0;">${game.name}</h3>
         <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+          </div>
+          <md-icon-button onclick="likeGame('${game.id}')">
+            <md-icon>favorite</md-icon>
+            <span style="font-size:12px; margin-left:4px;">${game.likes || 0}</span>
+          </md-icon-button>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -266,4 +279,3 @@ window.saveGame = () => {
     pushData(null);
   }
 };
-    
