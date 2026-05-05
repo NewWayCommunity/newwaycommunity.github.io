@@ -6,30 +6,11 @@
   <meta name="description" content="Explore a maior curadoria de jogos mobile e emuladores de alta performance.">
   <meta name="author" content="Koval Lamb">
 
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://newwaycommunity.github.io/">
-  <meta property="og:title" content="NWC • O próximo nível do mobile, um novo caminho.">
-  <meta property="og:description" content="Explore a maior curadoria de jogos mobile e emuladores de alta performance. Uma plataforma otimizada para jogadores que buscam estabilidade, downloads seguros, e a melhor experiência de emulação em um só lugar.">
-  <meta property="og:image" content="https://newwaycommunity.github.io/assets/banner.png">
-  <meta property="og:site_name" content="New Way Community">
-
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://newwaycommunity.github.io/">
-  <meta property="twitter:title" content="New Way Community">
-  <meta property="twitter:description" content="Explore a maior curadoria de jogos mobile e emuladores de alta performance. Uma plataforma otimizada para jogadores que buscam estabilidade, downloads seguros, e a melhor experiência de emulação em um só lugar.">
-  <meta property="twitter:image" content="https://newwaycommunity.github.io/assets/banner.png">
-
-  <meta name="google-site-verification" content="u8Kt3NfE1uPUe_vOiuC-VjH1IwrMtROpUuAm_0MGi5s" />
-
   <title>New Way Community</title>
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
-  
+
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-  
+
   <script type="module" src="https://esm.run/@material/web/all.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -39,89 +20,113 @@
   <link rel="stylesheet" href="css/dark.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-  <header>
-    <div class="header-content">
-      <h1>New Way Community</h1>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <md-icon-button id="discord-btn" onclick="window.open('https://discord.gg/W5DUnEUgtj', '_blank')">
-          <md-icon>
-            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter;">
-              <path d="M18.8943 4.34399C17.5183 3.71467 16.057 3.256 14.5317 3C14.3396 3.33067 14.1263 3.77866 13.977 4.13067C12.3546 3.89599 10.7439 3.89599 9.14391 4.13067C8.99457 3.77866 8.77056 3.33067 8.58922 3C7.05325 3.256 5.59191 3.71467 4.22552 4.34399C1.46286 8.41865 0.716188 12.3973 1.08952 16.3226C2.92418 17.6559 4.69486 18.4666 6.4346 19C6.86126 18.424 7.24527 17.8053 7.57594 17.1546C6.9466 16.92 6.34927 16.632 5.77327 16.2906C5.9226 16.184 6.07194 16.0667 6.21061 15.9493C9.68793 17.5387 13.4543 17.5387 16.889 15.9493C17.0383 16.0667 17.177 16.184 17.3263 16.2906C16.7503 16.632 16.153 16.92 15.5236 17.1546C15.8543 17.8053 16.2383 18.424 16.665 19C18.4036 18.4666 20.185 17.6559 22.01 16.3226C22.4687 11.7787 21.2836 7.83202 18.8943 4.34399ZM8.05593 13.9013C7.01058 13.9013 6.15725 12.952 6.15725 11.7893C6.15725 10.6267 6.98925 9.67731 8.05593 9.67731C9.11191 9.67731 9.97588 10.6267 9.95454 11.7893C9.95454 12.952 9.11191 13.9013 8.05593 13.9013ZM15.065 13.9013C14.0196 13.9013 13.1652 12.952 13.1652 11.7893C13.1652 10.6267 13.9983 9.67731 15.065 9.67731C16.121 9.67731 16.985 10.6267 16.9636 11.7893C16.9636 12.952 16.1317 13.9013 15.065 13.9013Z"></path>
-            </svg>
-          </md-icon>
-        </md-icon-button>
-        <md-icon-button id="auth-btn" onclick="handleAuthAction()">
-          <md-icon id="auth-icon">admin_panel_settings</md-icon>
-        </md-icon-button>
-        <md-icon-button id="theme-toggle" onclick="cycleTheme()">
-          <md-icon id="theme-icon">brightness_auto</md-icon>
-        </md-icon-button>
-      </div>
+<header>
+  <div class="header-content">
+    <h1>New Way Community</h1>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <md-icon-button onclick="handleAuthAction()">
+        <md-icon id="auth-icon">admin_panel_settings</md-icon>
+      </md-icon-button>
+
+      <md-icon-button onclick="cycleTheme()">
+        <md-icon id="theme-icon">brightness_auto</md-icon>
+      </md-icon-button>
     </div>
-  </header>
-
-  <div class="search-bar">
-    <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="renderGames()">
-      <md-icon slot="leading-icon">search</md-icon>
-    </md-outlined-text-field>
   </div>
+</header>
 
-  <main class="games-grid" id="games">
-    <div id="loading-spinner" style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 48px;">
-      <md-circular-progress indeterminate></md-circular-progress>
+<!-- 🔎 PESQUISA + CATEGORIA -->
+<div class="search-bar" style="display:flex; gap:10px; flex-wrap:wrap; padding:16px;">
+
+  <md-outlined-text-field id="search" label="Pesquisar jogos..." oninput="renderGames()" style="flex:1;">
+    <md-icon slot="leading-icon">search</md-icon>
+  </md-outlined-text-field>
+
+  <!-- 🔥 NOVO: FILTRO DE CATEGORIA -->
+  <md-outlined-select id="categoryFilter" label="Categoria" onchange="renderGames()" style="min-width:180px;">
+    <md-select-option value="">Todas</md-select-option>
+  </md-outlined-select>
+
+</div>
+
+<main class="games-grid" id="games">
+  <div style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 48px;">
+    <md-circular-progress indeterminate></md-circular-progress>
+  </div>
+</main>
+
+<!-- BOTÃO ADD -->
+<md-fab id="add-btn" onclick="openAddModal()" style="display: none;">
+  <md-icon slot="icon">add</md-icon>
+</md-fab>
+
+<!-- LOGIN -->
+<div class="modal-overlay" id="login-modal">
+  <md-elevated-card class="modal-content">
+    <h2 style="margin:0 0 16px 0">Acesso Administrativo</h2>
+
+    <md-outlined-text-field id="login-email" label="Email"></md-outlined-text-field>
+    <md-outlined-text-field id="login-pass" label="Senha" type="password"></md-outlined-text-field>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
+      <md-text-button onclick="closeLoginModal()">Cancelar</md-text-button>
+      <md-filled-button onclick="login()">Entrar</md-filled-button>
     </div>
-  </main>
+  </md-elevated-card>
+</div>
 
-  <md-fab id="add-btn" onclick="openAddModal()" style="display: none;">
-    <md-icon slot="icon">add</md-icon>
-  </md-fab>
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <md-elevated-card class="modal-content">
 
-  <div class="modal-overlay" id="login-modal">
-    <md-elevated-card class="modal-content">
-      <h2 style="margin:0 0 16px 0">Acesso Administrativo</h2>
-      <div class="form-scroll">
-        <md-outlined-text-field id="login-email" label="Email" type="email"></md-outlined-text-field>
-        <md-outlined-text-field id="login-pass" label="Senha" type="password"></md-outlined-text-field>
+    <h2 id="modalTitle">Adicionar Jogo</h2>
+
+    <form id="gameForm" onsubmit="event.preventDefault()">
+
+      <input type="hidden" id="gameId">
+
+      <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
+
+      <md-outlined-text-field id="desc" label="Descrição"></md-outlined-text-field>
+
+      <!-- 🔥 NOVO CAMPO CATEGORIA -->
+      <md-outlined-text-field id="category" label="Categoria"></md-outlined-text-field>
+
+      <div id="linksWrapper">
+        <p style="font-size:14px; opacity:0.7;">Links (máx 4)</p>
+        <div id="linksContainer"></div>
+
+        <md-text-button type="button" id="addLinkBtn" onclick="addLinkField()">
+          <md-icon slot="icon">add</md-icon>
+          Adicionar Link
+        </md-text-button>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
-        <md-text-button onclick="closeLoginModal()">Cancelar</md-text-button>
-        <md-filled-button onclick="login()">Entrar</md-filled-button>
-      </div>
-    </md-elevated-card>
-  </div>
 
-  <div class="modal-overlay" id="modal">
-    <md-elevated-card class="modal-content">
-      <h2 id="modalTitle" style="margin:0 0 16px 0">Adicionar Jogo</h2>
-      <form id="gameForm" class="form-scroll" onsubmit="event.preventDefault()">
-        <input type="hidden" id="gameId">
-        <md-outlined-text-field id="name" label="Nome"></md-outlined-text-field>
-        <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3"></md-outlined-text-field>
-        <div id="linksWrapper">
-          <p style="font-size:14px; margin:0 0 8px 0; opacity:0.7">Links do Jogo (Máx. 4)</p>
-          <div id="linksContainer"></div>
-          <md-text-button type="button" id="addLinkBtn" onclick="addLinkField()">
-            <md-icon slot="icon">add</md-icon> Adicionar Link
-          </md-text-button>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;">
-            <md-checkbox id="pinned"></md-checkbox>
-            <label for="pinned" style="font-size: 14px;">Fixar no topo</label>
-        </div>
-        <div style="padding:16px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid var(--md-sys-color-outline-variant);">
-          <label style="display:block; margin-bottom:8px; font-size:14px;">Banner</label>
-          <input id="banner" type="file" accept="image/*">
-        </div>
-      </form>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
-        <md-text-button onclick="closeModal()">Cancelar</md-text-button>
-        <md-filled-button onclick="saveGame()" id="saveBtn">Salvar</md-filled-button>
+      <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;">
+        <md-checkbox id="pinned"></md-checkbox>
+        <label for="pinned">Fixar no topo</label>
       </div>
-    </md-elevated-card>
-  </div>
 
-  <script src="js/app.js"></script>
+      <div style="padding:16px; border-radius:12px; background:rgba(255,255,255,0.05);">
+        <label>Banner</label>
+        <input id="banner" type="file" accept="image/*">
+      </div>
+
+    </form>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px">
+      <md-text-button onclick="closeModal()">Cancelar</md-text-button>
+      <md-filled-button onclick="saveGame()">Salvar</md-filled-button>
+    </div>
+
+  </md-elevated-card>
+</div>
+
+<script src="js/app.js"></script>
+
 </body>
 </html>
