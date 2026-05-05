@@ -119,27 +119,11 @@ window.handleSearch = () => {
   }, 400);
 };
 
-window.likeGame = (id) => {
-  const likedGames = JSON.parse(localStorage.getItem('likedGames') || '{}');
-  const gameRef = db.ref("games/" + id + "/likes");
-  
-  if (likedGames[id]) {
-    gameRef.transaction((current) => (current || 1) - 1);
-    delete likedGames[id];
-  } else {
-    gameRef.transaction((current) => (current || 0) + 1);
-    likedGames[id] = true;
-  }
-  
-  localStorage.setItem('likedGames', JSON.stringify(likedGames));
-};
-
 function renderGames() {
   const grid = document.getElementById('games');
   const searchTerm = document.getElementById('search').value.toLowerCase();
   const categoryFilter = document.getElementById('filter-category').value;
   const loadMoreBtn = document.getElementById('load-more-btn');
-  const likedGames = JSON.parse(localStorage.getItem('likedGames') || '{}');
 
   if (isInitialLoad) return;
   
@@ -156,7 +140,6 @@ function renderGames() {
   grid.innerHTML = "";
   
   displayList.forEach(game => {
-    const isLiked = !!likedGames[game.id];
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
@@ -171,14 +154,8 @@ function renderGames() {
         <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
         <h3 style="margin: 4px 0;">${game.name}</h3>
         <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
-          </div>
-          <div onclick="likeGame('${game.id}')" style="display:flex; align-items:center; cursor:pointer; user-select:none; gap:6px;">
-            <md-icon style="font-size:24px; color:${isLiked ? '#ff5252' : 'inherit'}; font-variation-settings: 'FILL' ${isLiked ? 1 : 0}">${isLiked ? 'favorite' : 'favorite_border'}</md-icon>
-            <span style="font-size:16px; font-weight:500; opacity:0.9;">${game.likes || 0}</span>
-          </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
         </div>
       </div>`;
     grid.appendChild(card);
