@@ -14,6 +14,7 @@ let allGames = [];
 let isInitialLoad = true;
 let isAdmin = false;
 let lastAttemptedPass = "";
+let visibleCount = 8; // Controle do sistema "Mostrar Mais"
 
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
@@ -57,11 +58,6 @@ function login() {
     passField.errorText = "A senha não pode estar vazia.";
     return;
   }
-  if (pass === lastAttemptedPass && passField.errorText === "Senha incorreta.") {
-    passField.error = true;
-    passField.errorText = "Altere a senha antes de tentar novamente.";
-    return;
-  }
 
   firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(() => {
@@ -71,13 +67,7 @@ function login() {
     .catch(err => {
       passField.error = true;
       lastAttemptedPass = pass;
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        passField.errorText = "Senha incorreta.";
-      } else if (err.code === 'auth/user-not-found') {
-        passField.errorText = "Usuário não encontrado.";
-      } else {
-        passField.errorText = "Erro ao entrar: " + err.message;
-      }
+      passField.errorText = "Erro ao entrar: " + err.message;
     });
 }
 
@@ -102,28 +92,49 @@ window.cycleTheme = () => {
 };
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if ((localStorage.getItem('user-theme') || 'auto') === 'auto') applyTheme('auto');
-});
+
+// SISTEMA DE CATEGORIAS DINÂMICAS
+function updateCategoryFilter() {
+  const filterSelect = document.getElementById('filter-category');
+  const currentVal = filterSelect.value;
+  
+  // Extrai categorias únicas dos jogos existentes
+  const categories = [...new Set(allGames.map(g => g.category).filter(c => c))].sort();
+  
+  let options = `<md-select-option value="Todas" ${currentVal === 'Todas' ? 'selected' : ''}><div slot="headline">Todas</div></md-select-option>`;
+  
+  categories.forEach(cat => {
+    options += `<md-select-option value="${cat}" ${currentVal === cat ? 'selected' : ''}><div slot="headline">${cat}</div></md-select-option>`;
+  });
+
+  if (filterSelect.innerHTML !== options) {
+    filterSelect.innerHTML = options;
+  }
+}
 
 function renderGames() {
   const grid = document.getElementById('games');
   const searchTerm = document.getElementById('search').value.toLowerCase();
   const categoryFilter = document.getElementById('filter-category').value;
-  
+  const loadMoreBtn = document.getElementById('load-more-btn');
+
   if (isInitialLoad) return;
   
+  updateCategoryFilter();
+
   const filtered = allGames.filter(g => {
     const matchesSearch = g.name.toLowerCase().includes(searchTerm);
     const matchesCategory = categoryFilter === "Todas" || g.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
   
+  const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  
+  // Lógica "Mostrar Mais"
+  const displayList = sorted.slice(0, visibleCount);
   grid.innerHTML = "";
   
-  const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-
-  sorted.forEach(game => {
+  displayList.forEach(game => {
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
@@ -144,7 +155,17 @@ function renderGames() {
       </div>`;
     grid.appendChild(card);
   });
+
+  // Exibe botão se houver mais itens para carregar
+  if (loadMoreBtn) {
+    loadMoreBtn.style.display = sorted.length > visibleCount ? 'flex' : 'none';
+  }
 }
+
+window.loadMore = () => {
+  visibleCount += 8;
+  renderGames();
+};
 
 db.ref("games").on("value", snap => {
   const data = snap.val() || {};
@@ -157,9 +178,6 @@ window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = "Adicionar Jogo";
   document.getElementById("gameId").value = "";
   document.getElementById("gameForm").reset();
-  const nameField = document.getElementById("name");
-  nameField.error = false;
-  nameField.errorText = "";
   document.getElementById("linksContainer").innerHTML = "";
   document.getElementById('modal').classList.add('active');
 };
@@ -172,7 +190,7 @@ window.editGame = (id) => {
   document.getElementById("gameId").value = game.id;
   document.getElementById("name").value = game.name;
   document.getElementById("desc").value = game.desc;
-  document.getElementById("category").value = game.category || "Outros";
+  document.getElementById("category").value = game.category || "";
   document.getElementById("pinned").checked = !!game.pinned;
   document.getElementById("linksContainer").innerHTML = "";
   if (game.links) game.links.forEach(l => addLinkField(l));
@@ -197,7 +215,7 @@ window.saveGame = () => {
   const nameField = document.getElementById("name");
   const name = nameField.value.trim();
   const desc = document.getElementById("desc").value;
-  const category = document.getElementById("category").value;
+  const category = document.getElementById("category").value.trim() || "Geral";
   const pinned = document.getElementById("pinned").checked;
   const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
   const file = document.getElementById("banner").files[0];
@@ -218,6 +236,7 @@ window.saveGame = () => {
     }
     if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
     closeModal();
+    visibleCount = 8; // Reseta o scroll ao salvar
   };
 
   if (file) { 
