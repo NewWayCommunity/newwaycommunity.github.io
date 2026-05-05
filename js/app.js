@@ -10,10 +10,14 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 let allGames = [];
 let isInitialLoad = true;
 let isAdmin = false;
 let lastAttemptedPass = "";
+
+// 🔥 NOVO: categoria selecionada
+let selectedCategory = "";
 
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
@@ -57,164 +61,177 @@ function login() {
     passField.errorText = "A senha não pode estar vazia.";
     return;
   }
-  if (pass === lastAttemptedPass && passField.errorText === "Senha incorreta.") {
-    passField.error = true;
-    passField.errorText = "Altere a senha antes de tentar novamente.";
-    return;
-  }
 
   firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(() => {
       closeLoginModal();
-      emailField.value = passField.value = lastAttemptedPass = "";
+      emailField.value = passField.value = "";
     })
     .catch(err => {
       passField.error = true;
-      lastAttemptedPass = pass;
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         passField.errorText = "Senha incorreta.";
       } else if (err.code === 'auth/user-not-found') {
         passField.errorText = "Usuário não encontrado.";
       } else {
-        passField.errorText = "Erro ao entrar: " + err.message;
+        passField.errorText = "Erro: " + err.message;
       }
     });
 }
 
+// 🎨 Tema
 const themes = ['auto', 'light', 'dark'];
 const themeIcons = { auto: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' };
 
 function applyTheme(theme) {
   const html = document.documentElement;
   const icon = document.getElementById('theme-icon');
-  let target = theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+  let target = theme === 'auto'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
+
   html.classList.remove('dark', 'light');
   html.classList.add(target);
+
   if (icon) icon.innerText = themeIcons[theme];
 }
 
 window.cycleTheme = () => {
   let current = localStorage.getItem('user-theme') || 'auto';
   let next = themes[(themes.indexOf(current) + 1) % themes.length];
+
   if (next === 'auto') localStorage.removeItem('user-theme');
   else localStorage.setItem('user-theme', next);
+
   applyTheme(next);
 };
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if ((localStorage.getItem('user-theme') || 'auto') === 'auto') applyTheme('auto');
-});
 
+// 🔥 FILTRO COM CATEGORIA + BUSCA
 function renderGames() {
   const grid = document.getElementById('games');
   const searchTerm = document.getElementById('search').value.toLowerCase();
+
   if (isInitialLoad) return;
-  
-  const filtered = allGames.filter(g => g.name.toLowerCase().includes(searchTerm));
+
+  const filtered = allGames
+    .filter(g => g.name.toLowerCase().includes(searchTerm))
+    .filter(g => !selectedCategory || g.category === selectedCategory);
+
   grid.innerHTML = "";
-  
-  const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  const sorted = [...filtered].reverse().sort((a, b) =>
+    (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
+  );
 
   sorted.forEach(game => {
     const card = document.createElement('md-elevated-card');
     card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
+
     card.innerHTML = `
-      ${game.pinned ? '<div class="pin-icon"><md-icon style="font-size:18px;">push_pin</md-icon></div>' : ''}
+      ${game.pinned ? '<div class="pin-icon"><md-icon>push_pin</md-icon></div>' : ''}
       ${isAdmin ? `
         <div class="admin-actions">
-          <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
-          <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
+          <md-filled-icon-button onclick="editGame('${game.id}')"><md-icon>edit</md-icon></md-filled-icon-button>
+          <md-filled-icon-button onclick="deleteGame('${game.id}')"><md-icon>delete</md-icon></md-filled-icon-button>
         </div>` : ''}
       ${game.banner ? `<img src="${game.banner}">` : ''}
       <div class="card-body">
         <h3>${game.name}</h3>
-        <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+        <p>${game.desc || ''}</p>
+        <small>${game.category || ''}</small>
+        <div style="margin-top:10px;">
+          ${(game.links || []).map((l, i) =>
+            `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`
+          ).join('')}
         </div>
       </div>`;
+
     grid.appendChild(card);
   });
 }
 
+// 🔥 CRIAR CATEGORIAS AUTOMATICAMENTE
+function updateCategories() {
+  const select = document.getElementById("categoryFilter");
+  if (!select) return;
+
+  const categories = [...new Set(allGames.map(g => g.category).filter(Boolean))];
+
+  select.innerHTML = `<option value="">Todas</option>`;
+
+  categories.forEach(cat => {
+    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
+}
+
+// 🔥 EVENTO DE FILTRO
+window.changeCategory = (value) => {
+  selectedCategory = value;
+  renderGames();
+};
+
+// 🔥 FIREBASE LOAD
 db.ref("games").on("value", snap => {
   const data = snap.val() || {};
   allGames = Object.keys(data).map(key => ({ ...data[key], id: key }));
   isInitialLoad = false;
+  updateCategories();
   renderGames();
 });
 
+// MODAL
 window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = "Adicionar Jogo";
-  document.getElementById("gameId").value = "";
   document.getElementById("gameForm").reset();
-  const nameField = document.getElementById("name");
-  nameField.error = false;
-  nameField.errorText = "";
   document.getElementById("linksContainer").innerHTML = "";
   document.getElementById('modal').classList.add('active');
 };
 
 window.closeModal = () => document.getElementById('modal').classList.remove('active');
 
-window.editGame = (id) => {
-  const game = allGames.find(g => g.id === id);
-  document.getElementById("modalTitle").innerText = "Editar Jogo";
-  document.getElementById("gameId").value = game.id;
-  document.getElementById("name").value = game.name;
-  document.getElementById("desc").value = game.desc;
-  document.getElementById("pinned").checked = !!game.pinned;
-  document.getElementById("linksContainer").innerHTML = "";
-  if (game.links) game.links.forEach(l => addLinkField(l));
-  document.getElementById('modal').classList.add('active');
-};
-
-window.deleteGame = (id) => { if (confirm("Deseja excluir?")) db.ref("games/" + id).remove(); };
-
+// LINKS
 window.addLinkField = (val = "") => {
   const container = document.getElementById('linksContainer');
-  if (container.querySelectorAll('.link-input').length >= 4) return;
-  const row = document.createElement('div');
-  row.style = "display:flex; align-items:center; gap:8px; margin-bottom:8px;";
-  row.innerHTML = `<md-outlined-text-field label="URL" class="link-input" style="flex:1" value="${val}"></md-outlined-text-field>
-    <md-icon-button type="button" onclick="this.parentElement.remove(); document.getElementById('addLinkBtn').disabled = false;"><md-icon>delete</md-icon></md-icon-button>`;
-  container.appendChild(row);
-  if (container.querySelectorAll('.link-input').length >= 4) document.getElementById('addLinkBtn').disabled = true;
+  const input = document.createElement('input');
+  input.className = "link-input";
+  input.value = val;
+  container.appendChild(input);
 };
 
+// SALVAR
 window.saveGame = () => {
-  const id = document.getElementById("gameId").value;
-  const nameField = document.getElementById("name");
-  const name = nameField.value.trim();
+  const name = document.getElementById("name").value.trim();
   const desc = document.getElementById("desc").value;
-  const pinned = document.getElementById("pinned").checked;
-  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
+  const category = document.getElementById("category").value;
+
+  const links = Array.from(document.querySelectorAll(".link-input"))
+    .map(i => i.value)
+    .filter(v => v);
+
   const file = document.getElementById("banner").files[0];
 
   if (!name) {
-    nameField.error = true;
-    nameField.errorText = "O nome do jogo é obrigatório.";
+    alert("Nome obrigatório");
     return;
   }
 
-  const pushData = (imgUrl) => {
-    const data = { name, desc, links, pinned };
-    if (imgUrl) {
-      data.banner = imgUrl;
-    } else if (id) {
-      const oldGame = allGames.find(g => g.id === id);
-      if (oldGame && oldGame.banner) data.banner = oldGame.banner;
-    }
-    if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const data = {
+      name,
+      desc,
+      category,
+      links,
+      banner: e.target.result,
+      date: Date.now()
+    };
+
+    db.ref("games").push(data);
     closeModal();
   };
 
-  if (file) { 
-    const reader = new FileReader(); 
-    reader.onload = (e) => pushData(e.target.result); 
-    reader.readAsDataURL(file); 
-  } else {
-    pushData(null);
-  }
+  if (file) reader.readAsDataURL(file);
 };
