@@ -137,29 +137,29 @@ function renderGames() {
   
   const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   const displayList = sorted.slice(0, visibleCount);
-  grid.innerHTML = "";
   
+  let newHTML = "";
   displayList.forEach(game => {
-    const card = document.createElement('md-elevated-card');
-    card.className = `game-card ${game.pinned ? 'pinned' : ''}`;
-    card.innerHTML = `
-      ${game.pinned ? '<div class="pin-icon"><md-icon style="font-size:18px;">push_pin</md-icon></div>' : ''}
-      ${isAdmin ? `
-        <div class="admin-actions">
-          <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
-          <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
-        </div>` : ''}
-      ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility: auto;">` : ''}
-      <div class="card-body">
-        <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
-        <h3 style="margin: 4px 0;">${game.name}</h3>
-        <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+    newHTML += `
+      <md-elevated-card class="game-card ${game.pinned ? 'pinned' : ''}">
+        ${game.pinned ? '<div class="pin-icon"><md-icon style="font-size:18px;">push_pin</md-icon></div>' : ''}
+        ${isAdmin ? `
+          <div class="admin-actions">
+            <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
+            <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
+          </div>` : ''}
+        ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility: auto;">` : ''}
+        <div class="card-body">
+          <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
+          <h3 style="margin: 4px 0;">${game.name}</h3>
+          <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+          </div>
         </div>
-      </div>`;
-    grid.appendChild(card);
+      </md-elevated-card>`;
   });
+  grid.innerHTML = newHTML;
 
   if (loadMoreBtn) {
     loadMoreBtn.style.display = sorted.length > visibleCount ? 'flex' : 'none';
@@ -255,7 +255,6 @@ window.saveGame = () => {
     }
     if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
     closeModal();
-    visibleCount = 8;
   };
 
   if (file) { 
@@ -266,3 +265,4 @@ window.saveGame = () => {
     pushData(null);
   }
 };
+    
