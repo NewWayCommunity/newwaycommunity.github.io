@@ -132,13 +132,19 @@ function renderGames() {
 
   if (!navigator.onLine) {
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--md-sys-color-error);">
-        <md-icon style="font-size: 48px;">cloud_off</md-icon>
-        <p style="font-size: 18px; margin-top: 10px; font-family: inherit;">Sem conexão com a internet</p>
+      <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; opacity: 0.8;">
+        <md-icon style="font-size: 64px; width: 64px; height: 64px; color: var(--md-sys-color-error);">wifi_off</md-icon>
+        <h2 style="font-family: inherit; margin: 16px 0 8px 0; font-size: 1.2rem; color: var(--md-sys-color-on-surface);">Sem conexão</h2>
+        <p style="font-family: inherit; font-size: 0.9rem; color: var(--md-sys-color-outline); text-align: center;">Verifique sua internet para carregar os jogos.</p>
       </div>`;
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+    if (searchInput) searchInput.disabled = true;
+    if (categorySelect) categorySelect.disabled = true;
     return;
   }
+
+  if (searchInput) searchInput.disabled = false;
+  if (categorySelect) categorySelect.disabled = false;
 
   if (isInitialLoad) return;
   
@@ -177,7 +183,7 @@ function renderGames() {
         </div>
       </md-elevated-card>`;
   });
-  grid.innerHTML = newHTML;
+  grid.innerHTML = newHTML || `<p style="grid-column: 1/-1; text-align: center; padding: 48px; opacity: 0.6;">Nenhum jogo encontrado.</p>`;
 
   if (loadMoreBtn) {
     loadMoreBtn.style.display = sorted.length > visibleCount ? 'flex' : 'none';
