@@ -20,8 +20,10 @@ let searchTimer;
 
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
-  document.getElementById('add-btn').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('auth-icon').innerText = isAdmin ? 'logout' : 'admin_panel_settings';
+  const addBtn = document.getElementById('add-btn');
+  const authIcon = document.getElementById('auth-icon');
+  if (addBtn) addBtn.style.display = isAdmin ? 'flex' : 'none';
+  if (authIcon) authIcon.innerText = isAdmin ? 'logout' : 'admin_panel_settings';
   renderGames();
 });
 
@@ -97,6 +99,7 @@ applyTheme(localStorage.getItem('user-theme') || 'auto');
 
 function updateCategoryFilter() {
   const filterSelect = document.getElementById('filter-category');
+  if (!filterSelect) return;
   const currentVal = filterSelect.value;
   const categories = [...new Set(allGames.map(g => g.category).filter(c => c))].sort();
   const catString = categories.join(",");
@@ -121,13 +124,28 @@ window.handleSearch = () => {
 
 function renderGames() {
   const grid = document.getElementById('games');
-  const searchTerm = document.getElementById('search').value.toLowerCase();
-  const categoryFilter = document.getElementById('filter-category').value;
   const loadMoreBtn = document.getElementById('load-more-btn');
+  const searchInput = document.getElementById('search');
+  const categorySelect = document.getElementById('filter-category');
+
+  if (!grid) return;
+
+  if (!navigator.onLine) {
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--md-sys-color-error);">
+        <md-icon style="font-size: 48px;">cloud_off</md-icon>
+        <p style="font-size: 18px; margin-top: 10px; font-family: inherit;">Sem conexão com a internet</p>
+      </div>`;
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+    return;
+  }
 
   if (isInitialLoad) return;
   
   updateCategoryFilter();
+
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+  const categoryFilter = categorySelect ? categorySelect.value : "Todas";
 
   const filtered = allGames.filter(g => {
     const matchesSearch = g.name.toLowerCase().includes(searchTerm);
@@ -177,6 +195,9 @@ db.ref("games").on("value", snap => {
   isInitialLoad = false;
   renderGames();
 });
+
+window.addEventListener('online', renderGames);
+window.addEventListener('offline', renderGames);
 
 window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = "Adicionar Jogo";
@@ -265,4 +286,3 @@ window.saveGame = () => {
     pushData(null);
   }
 };
-    
