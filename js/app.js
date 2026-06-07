@@ -10,6 +10,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 let allGames = [];
 let isInitialLoad = true;
 let isAdmin = false;
@@ -18,6 +19,34 @@ let visibleCount = 8;
 let lastCategoryList = "";
 let searchTimer;
 
+/* ── CACHE LOCAL ────────────────────────────────────────
+   Salva os jogos no localStorage com timestamp.
+   Na próxima visita, exibe o cache instantaneamente
+   enquanto busca atualizações em segundo plano.
+────────────────────────────────────────────────────── */
+const CACHE_KEY = 'nwc_games_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+function saveCache(games) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      games
+    }));
+  } catch (e) { /* localStorage cheio, ignora */ }
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, games } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null; // expirado
+    return games;
+  } catch (e) { return null; }
+}
+
+/* ── AUTH ───────────────────────────────────────────── */
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
   const addBtn = document.getElementById('add-btn');
@@ -45,9 +74,9 @@ function validateEmail(email) {
 
 function login() {
   const emailField = document.getElementById('login-email');
-  const passField = document.getElementById('login-pass');
+  const passField  = document.getElementById('login-pass');
   const email = emailField.value.trim();
-  const pass = passField.value;
+  const pass  = passField.value;
 
   emailField.error = passField.error = false;
   emailField.errorText = passField.errorText = "";
@@ -75,13 +104,16 @@ function login() {
     });
 }
 
+/* ── TEMA ───────────────────────────────────────────── */
 const themes = ['auto', 'light', 'dark'];
 const themeIcons = { auto: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' };
 
 function applyTheme(theme) {
   const html = document.documentElement;
   const icon = document.getElementById('theme-icon');
-  let target = theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+  let target = theme === 'auto'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
   html.classList.remove('dark', 'light');
   html.classList.add(target);
   if (icon) icon.innerText = themeIcons[theme];
@@ -97,6 +129,7 @@ window.cycleTheme = () => {
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
 
+/* ── FILTRO DE CATEGORIAS ───────────────────────────── */
 function updateCategoryFilter() {
   const filterSelect = document.getElementById('filter-category');
   if (!filterSelect) return;
@@ -114,6 +147,31 @@ function updateCategoryFilter() {
   }
 }
 
+/* ── SKELETON LOADING ───────────────────────────────── */
+function showSkeletons(count = 8) {
+  const grid = document.getElementById('games');
+  if (!grid) return;
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="game-card skeleton-card" style="pointer-events:none;">
+        <div class="skeleton skeleton-banner"></div>
+        <div class="card-body">
+          <div class="skeleton skeleton-chip"></div>
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-text"></div>
+          <div class="skeleton skeleton-text" style="width:70%"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <div class="skeleton skeleton-btn"></div>
+            <div class="skeleton skeleton-btn"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+/* ── PESQUISA ───────────────────────────────────────── */
 window.handleSearch = () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
@@ -122,20 +180,21 @@ window.handleSearch = () => {
   }, 400);
 };
 
+/* ── RENDER ─────────────────────────────────────────── */
 function renderGames() {
-  const grid = document.getElementById('games');
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  const searchInput = document.getElementById('search');
+  const grid           = document.getElementById('games');
+  const loadMoreBtn    = document.getElementById('load-more-btn');
+  const searchInput    = document.getElementById('search');
   const categorySelect = document.getElementById('filter-category');
 
   if (!grid) return;
 
   if (!navigator.onLine) {
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; opacity: 0.8;">
-        <md-icon style="font-size: 64px; width: 64px; height: 64px; color: var(--md-sys-color-error);">wifi_off</md-icon>
-        <h2 style="font-family: inherit; margin: 16px 0 8px 0; font-size: 1.2rem; color: var(--md-sys-color-on-surface);">Sem conexão</h2>
-        <p style="font-family: inherit; font-size: 0.9rem; color: var(--md-sys-color-outline); text-align: center;">Verifique sua internet para carregar os jogos.</p>
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;opacity:0.8;">
+        <md-icon style="font-size:64px;width:64px;height:64px;color:var(--md-sys-color-error);">wifi_off</md-icon>
+        <h2 style="font-family:inherit;margin:16px 0 8px 0;font-size:1.2rem;color:var(--md-sys-color-on-surface);">Sem conexão</h2>
+        <p style="font-family:inherit;font-size:0.9rem;color:var(--md-sys-color-outline);text-align:center;">Verifique sua internet para carregar os jogos.</p>
       </div>`;
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     if (searchInput) searchInput.disabled = true;
@@ -147,43 +206,44 @@ function renderGames() {
   if (categorySelect) categorySelect.disabled = false;
 
   if (isInitialLoad) return;
-  
+
   updateCategoryFilter();
 
-  const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
-  const categoryFilter = categorySelect ? categorySelect.value : "Todas";
+  const searchTerm     = searchInput    ? searchInput.value.toLowerCase() : "";
+  const categoryFilter = categorySelect ? categorySelect.value            : "Todas";
 
   const filtered = allGames.filter(g => {
-    const matchesSearch = g.name.toLowerCase().includes(searchTerm);
+    const matchesSearch   = g.name.toLowerCase().includes(searchTerm);
     const matchesCategory = categoryFilter === "Todas" || g.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
-  
-  const sorted = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  const sorted      = [...filtered].reverse().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   const displayList = sorted.slice(0, visibleCount);
-  
+
   let newHTML = "";
-  displayList.forEach(game => {
+  displayList.forEach((game, idx) => {
     newHTML += `
-      <md-elevated-card class="game-card ${game.pinned ? 'pinned' : ''}">
+      <md-elevated-card class="game-card ${game.pinned ? 'pinned' : ''}" style="animation-delay:${idx * 40}ms">
         ${game.pinned ? '<div class="pin-icon"><md-icon style="font-size:18px;">push_pin</md-icon></div>' : ''}
         ${isAdmin ? `
           <div class="admin-actions">
-            <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
-            <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color: var(--md-sys-color-error); --md-filled-icon-button-container-width: 32px; --md-filled-icon-button-container-height: 32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
+            <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width:32px;--md-filled-icon-button-container-height:32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
+            <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color:var(--md-sys-color-error);--md-filled-icon-button-container-width:32px;--md-filled-icon-button-container-height:32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
           </div>` : ''}
-        ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility: auto;">` : ''}
+        ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility:auto;">` : ''}
         <div class="card-body">
-          <p style="color: var(--md-sys-color-primary); font-size: 11px; font-weight: bold; margin: 0; text-transform: uppercase;">${game.category || 'Geral'}</p>
-          <h3 style="margin: 4px 0;">${game.name}</h3>
-          <p style="margin:12px 0; font-size:14px; opacity:0.8;">${game.desc || ''}</p>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <p style="color:var(--md-sys-color-primary);font-size:11px;font-weight:bold;margin:0;text-transform:uppercase;">${game.category || 'Geral'}</p>
+          <h3 style="margin:4px 0;">${game.name}</h3>
+          <p style="margin:12px 0;font-size:14px;opacity:0.8;">${game.desc || ''}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
           </div>
         </div>
       </md-elevated-card>`;
   });
-  grid.innerHTML = newHTML || `<p style="grid-column: 1/-1; text-align: center; padding: 48px; opacity: 0.6;">Nenhum jogo encontrado.</p>`;
+
+  grid.innerHTML = newHTML || `<p style="grid-column:1/-1;text-align:center;padding:48px;opacity:0.6;">Nenhum jogo encontrado.</p>`;
 
   if (loadMoreBtn) {
     loadMoreBtn.style.display = sorted.length > visibleCount ? 'flex' : 'none';
@@ -195,16 +255,58 @@ window.loadMore = () => {
   renderGames();
 };
 
-db.ref("games").on("value", snap => {
+/* ── FIREBASE: carrega com cache ────────────────────────
+   1. Mostra skeletons imediatamente
+   2. Se tiver cache válido, exibe na hora
+   3. Busca do Firebase em background
+   4. Atualiza a tela e salva novo cache
+────────────────────────────────────────────────────── */
+const cached = loadCache();
+if (cached && cached.length > 0) {
+  // Exibe cache instantaneamente
+  allGames = cached;
+  isInitialLoad = false;
+  renderGames();
+} else {
+  // Sem cache: mostra skeletons enquanto carrega
+  showSkeletons(8);
+}
+
+db.ref("games").once("value", snap => {
   const data = snap.val() || {};
   allGames = Object.keys(data).map(key => ({ ...data[key], id: key }));
   isInitialLoad = false;
+  saveCache(allGames);
   renderGames();
+
+  // Após o carregamento inicial, fica escutando só mudanças
+  // (child_changed, child_added, child_removed) — muito mais leve
+  // do que ouvir o nó inteiro a cada alteração
+  db.ref("games").on("child_added", snap => {
+    if (allGames.find(g => g.id === snap.key)) return; // já existe
+    allGames.push({ ...snap.val(), id: snap.key });
+    saveCache(allGames);
+    renderGames();
+  });
+
+  db.ref("games").on("child_changed", snap => {
+    const idx = allGames.findIndex(g => g.id === snap.key);
+    if (idx !== -1) allGames[idx] = { ...snap.val(), id: snap.key };
+    saveCache(allGames);
+    renderGames();
+  });
+
+  db.ref("games").on("child_removed", snap => {
+    allGames = allGames.filter(g => g.id !== snap.key);
+    saveCache(allGames);
+    renderGames();
+  });
 });
 
-window.addEventListener('online', renderGames);
+window.addEventListener('online',  renderGames);
 window.addEventListener('offline', renderGames);
 
+/* ── MODAIS ─────────────────────────────────────────── */
 window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = "Adicionar Jogo";
   document.getElementById("gameId").value = "";
@@ -218,9 +320,9 @@ window.closeModal = () => document.getElementById('modal').classList.remove('act
 window.editGame = (id) => {
   const game = allGames.find(g => g.id === id);
   document.getElementById("modalTitle").innerText = "Editar Jogo";
-  document.getElementById("gameId").value = game.id;
-  document.getElementById("name").value = game.name;
-  document.getElementById("desc").value = game.desc;
+  document.getElementById("gameId").value   = game.id;
+  document.getElementById("name").value     = game.name;
+  document.getElementById("desc").value     = game.desc;
   document.getElementById("category").value = game.category || "";
   document.getElementById("pinned").checked = !!game.pinned;
   document.getElementById("linksContainer").innerHTML = "";
@@ -228,31 +330,34 @@ window.editGame = (id) => {
   document.getElementById('modal').classList.add('active');
 };
 
-window.deleteGame = (id) => { if (confirm("Deseja excluir?")) db.ref("games/" + id).remove(); };
+window.deleteGame = (id) => {
+  if (confirm("Deseja excluir?")) db.ref("games/" + id).remove();
+};
 
 window.addLinkField = (val = "") => {
   const container = document.getElementById('linksContainer');
   if (container.querySelectorAll('.link-input').length >= 4) return;
   const row = document.createElement('div');
-  row.style = "display:flex; align-items:center; gap:8px; margin-bottom:8px;";
+  row.style = "display:flex;align-items:center;gap:8px;margin-bottom:8px;";
   row.innerHTML = `<md-outlined-text-field label="URL" class="link-input" style="flex:1" value="${val}"></md-outlined-text-field>
-    <md-icon-button type="button" onclick="this.parentElement.remove(); document.getElementById('addLinkBtn').disabled = false;"><md-icon>delete</md-icon></md-icon-button>`;
+    <md-icon-button type="button" onclick="this.parentElement.remove();document.getElementById('addLinkBtn').disabled=false;"><md-icon>delete</md-icon></md-icon-button>`;
   container.appendChild(row);
-  if (container.querySelectorAll('.link-input').length >= 4) document.getElementById('addLinkBtn').disabled = true;
+  if (container.querySelectorAll('.link-input').length >= 4)
+    document.getElementById('addLinkBtn').disabled = true;
 };
 
 window.saveGame = () => {
-  const id = document.getElementById("gameId").value;
-  const nameField = document.getElementById("name");
-  const descField = document.getElementById("desc");
+  const id            = document.getElementById("gameId").value;
+  const nameField     = document.getElementById("name");
+  const descField     = document.getElementById("desc");
   const categoryField = document.getElementById("category");
-  
-  const name = nameField.value.trim();
-  const desc = descField.value.trim();
+
+  const name     = nameField.value.trim();
+  const desc     = descField.value.trim();
   const category = categoryField.value.trim() || "Geral";
-  const pinned = document.getElementById("pinned").checked;
-  const links = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
-  const file = document.getElementById("banner").files[0];
+  const pinned   = document.getElementById("pinned").checked;
+  const links    = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
+  const file     = document.getElementById("banner").files[0];
 
   nameField.error = descField.error = categoryField.error = false;
 
@@ -280,23 +385,22 @@ window.saveGame = () => {
       const oldGame = allGames.find(g => g.id === id);
       if (oldGame && oldGame.banner) data.banner = oldGame.banner;
     }
-    if (id) db.ref("games/" + id).update(data); else db.ref("games").push(data);
+    if (id) db.ref("games/" + id).update(data);
+    else    db.ref("games").push(data);
     closeModal();
   };
 
-  if (file) { 
-    const reader = new FileReader(); 
-    reader.onload = (e) => pushData(e.target.result); 
-    reader.readAsDataURL(file); 
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => pushData(e.target.result);
+    reader.readAsDataURL(file);
   } else {
     pushData(null);
   }
 };
 
-
 /* ── ESTRELAS ANIMADAS ──────────────────────────────── */
 (function () {
-  // Cria o canvas e insere no body antes de tudo
   const canvas = document.createElement('canvas');
   canvas.id = 'stars-canvas';
   document.body.prepend(canvas);
@@ -314,10 +418,10 @@ window.saveGame = () => {
     return {
       x:       Math.random() * canvas.width,
       y:       Math.random() * canvas.height,
-      radius:  Math.random() * 1.4 + 0.3,         // 0.3 ~ 1.7px
-      speed:   Math.random() * 0.4 + 0.08,         // bem devagar
+      radius:  Math.random() * 1.4 + 0.3,
+      speed:   Math.random() * 0.4 + 0.08,
       opacity: Math.random() * 0.6 + 0.3,
-      twinkle: Math.random() * Math.PI * 2,         // fase do brilho
+      twinkle: Math.random() * Math.PI * 2,
     };
   }
 
@@ -331,32 +435,18 @@ window.saveGame = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const isDark = document.documentElement.classList.contains('dark');
-    if (!isDark) {
-      requestAnimationFrame(draw);
-      return;
-    }
+    if (!isDark) { requestAnimationFrame(draw); return; }
 
     const now = Date.now() / 1000;
-
     stars.forEach(s => {
-      // Brilho pulsante suave
       const twinkleOpacity = s.opacity * (0.7 + 0.3 * Math.sin(now * 0.8 + s.twinkle));
-
-      // Cor: branco ou levemente lilás
       const hue = Math.random() > 0.7 ? '270, 80%, 90%' : '0, 0%, 100%';
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${hue}, ${twinkleOpacity})`;
       ctx.fill();
-
-      // Cai devagar
       s.y += s.speed;
-
-      // Quando sai pela base, renasce no topo
-      if (s.y > canvas.height + 2) {
-        s.y = -2;
-        s.x = Math.random() * canvas.width;
-      }
+      if (s.y > canvas.height + 2) { s.y = -2; s.x = Math.random() * canvas.width; }
     });
 
     requestAnimationFrame(draw);
@@ -364,7 +454,6 @@ window.saveGame = () => {
 
   window.addEventListener('resize', () => {
     resize();
-    // Redistribui estrelas que ficaram fora da tela
     stars.forEach(s => {
       if (s.x > canvas.width)  s.x = Math.random() * canvas.width;
       if (s.y > canvas.height) s.y = Math.random() * canvas.height;
@@ -374,4 +463,4 @@ window.saveGame = () => {
   init();
   draw();
 })();
-    
+  
