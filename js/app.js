@@ -292,3 +292,86 @@ window.saveGame = () => {
     pushData(null);
   }
 };
+
+
+/* ── ESTRELAS ANIMADAS ──────────────────────────────── */
+(function () {
+  // Cria o canvas e insere no body antes de tudo
+  const canvas = document.createElement('canvas');
+  canvas.id = 'stars-canvas';
+  document.body.prepend(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const STAR_COUNT = 120;
+  const stars = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function randomStar() {
+    return {
+      x:       Math.random() * canvas.width,
+      y:       Math.random() * canvas.height,
+      radius:  Math.random() * 1.4 + 0.3,         // 0.3 ~ 1.7px
+      speed:   Math.random() * 0.4 + 0.08,         // bem devagar
+      opacity: Math.random() * 0.6 + 0.3,
+      twinkle: Math.random() * Math.PI * 2,         // fase do brilho
+    };
+  }
+
+  function init() {
+    resize();
+    stars.length = 0;
+    for (let i = 0; i < STAR_COUNT; i++) stars.push(randomStar());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const isDark = document.documentElement.classList.contains('dark');
+    if (!isDark) {
+      requestAnimationFrame(draw);
+      return;
+    }
+
+    const now = Date.now() / 1000;
+
+    stars.forEach(s => {
+      // Brilho pulsante suave
+      const twinkleOpacity = s.opacity * (0.7 + 0.3 * Math.sin(now * 0.8 + s.twinkle));
+
+      // Cor: branco ou levemente lilás
+      const hue = Math.random() > 0.7 ? '270, 80%, 90%' : '0, 0%, 100%';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${hue}, ${twinkleOpacity})`;
+      ctx.fill();
+
+      // Cai devagar
+      s.y += s.speed;
+
+      // Quando sai pela base, renasce no topo
+      if (s.y > canvas.height + 2) {
+        s.y = -2;
+        s.x = Math.random() * canvas.width;
+      }
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => {
+    resize();
+    // Redistribui estrelas que ficaram fora da tela
+    stars.forEach(s => {
+      if (s.x > canvas.width)  s.x = Math.random() * canvas.width;
+      if (s.y > canvas.height) s.y = Math.random() * canvas.height;
+    });
+  });
+
+  init();
+  draw();
+})();
+    
