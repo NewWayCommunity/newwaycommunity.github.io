@@ -46,6 +46,8 @@ firebase.auth().onAuthStateChanged(user => {
   const authIcon = document.getElementById('auth-icon');
   if (addBtn)   addBtn.style.display = isAdmin ? 'flex' : 'none';
   if (authIcon) authIcon.innerText   = isAdmin ? 'logout' : 'admin_panel_settings';
+  const deleteAllBtn = document.getElementById('delete-all-btn');
+  if (deleteAllBtn) deleteAllBtn.style.display = isAdmin ? 'flex' : 'none';
   renderGames();
 });
 
@@ -284,6 +286,7 @@ window.openAddModal = () => {
   document.getElementById("gameId").value = "";
   document.getElementById("gameForm").reset();
   document.getElementById("linksContainer").innerHTML = "";
+  document.getElementById("banner-url").value = "";
   document.getElementById('modal').classList.add('active');
 };
 
@@ -300,7 +303,22 @@ window.editGame = (id) => {
   document.getElementById("linksContainer").innerHTML = "";
   const linksToLoad = game.linkObjects || (game.links || []).map((u, i) => ({ label: `Link ${i + 1}`, url: u }));
   linksToLoad.forEach(l => addLinkField(l));
+  // Preenche URL do banner se for uma URL (não base64)
+  const bannerUrlField = document.getElementById("banner-url");
+  if (bannerUrlField) {
+    bannerUrlField.value = (game.banner && !game.banner.startsWith('data:')) ? game.banner : '';
+  }
   document.getElementById('modal').classList.add('active');
+};
+
+window.deleteAllGames = () => {
+  if (!confirm("Tem certeza? Isso vai apagar TODOS os jogos permanentemente!")) return;
+  if (!confirm("Segunda confirmação: apagar todos os jogos?")) return;
+  db.ref("games").remove().then(() => {
+    allGames = [];
+    localStorage.removeItem('nwc_games_cache');
+    renderGames();
+  });
 };
 
 window.deleteGame = (id) => {
@@ -336,8 +354,6 @@ window.saveGame = () => {
   const desc     = descField.value.trim();
   const category = categoryField.value.trim() || "Geral";
   const pinned   = document.getElementById("pinned").checked;
-  const file     = document.getElementById("banner").files[0];
-
   nameField.error = descField.error = categoryField.error = false;
 
   if (!name || name.length > 30) {
@@ -373,26 +389,18 @@ window.saveGame = () => {
   if (linkError) return;
   const links = linkObjects.map(l => l.url);
 
-  const pushData = (imgUrl) => {
-    const data = { name, desc, category, links, linkObjects, pinned };
-    if (imgUrl) {
-      data.banner = imgUrl;
-    } else if (id) {
-      const oldGame = allGames.find(g => g.id === id);
-      if (oldGame && oldGame.banner) data.banner = oldGame.banner;
-    }
-    if (id) db.ref("games/" + id).update(data);
-    else    db.ref("games").push(data);
-    closeModal();
-  };
+  const bannerUrl = document.getElementById("banner-url").value.trim();
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => pushData(e.target.result);
-    reader.readAsDataURL(file);
-  } else {
-    pushData(null);
+  const data = { name, desc, category, links, linkObjects, pinned };
+  if (bannerUrl) {
+    data.banner = bannerUrl;
+  } else if (id) {
+    const oldGame = allGames.find(g => g.id === id);
+    if (oldGame && oldGame.banner) data.banner = oldGame.banner;
   }
+  if (id) db.ref("games/" + id).update(data);
+  else    db.ref("games").push(data);
+  closeModal();
 };
 
 /* ── ESTRELAS ANIMADAS ──────────────────────────────── */
@@ -456,4 +464,4 @@ window.saveGame = () => {
   init();
   draw();
 })();
-      
+  
