@@ -29,10 +29,12 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 function saveCache(games) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      ts: Date.now(),
-      games
-    }));
+    // Salva sem os banners para economizar memória e localStorage
+    const slim = games.map(g => {
+      const { banner, ...rest } = g;
+      return rest;
+    });
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), games: slim }));
   } catch (e) { /* localStorage cheio, ignora */ }
 }
 
@@ -231,7 +233,7 @@ function renderGames() {
             <md-filled-icon-button onclick="editGame('${game.id}')" style="--md-filled-icon-button-container-width:32px;--md-filled-icon-button-container-height:32px;"><md-icon style="font-size:18px;">edit</md-icon></md-filled-icon-button>
             <md-filled-icon-button onclick="deleteGame('${game.id}')" style="--md-filled-icon-button-container-color:var(--md-sys-color-error);--md-filled-icon-button-container-width:32px;--md-filled-icon-button-container-height:32px;"><md-icon style="font-size:18px;">delete</md-icon></md-filled-icon-button>
           </div>` : ''}
-        ${game.banner ? `<img src="${game.banner}" loading="lazy" decoding="async" style="content-visibility:auto;">` : ''}
+        ${game._hasBanner !== false ? `<img data-game-id="${game.id}" loading="lazy" decoding="async" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--md-sys-color-surface-container-high);">` : \'\'}
         <div class="card-body">
           <p style="color:var(--md-sys-color-primary);font-size:11px;font-weight:bold;margin:0;text-transform:uppercase;">${game.category || 'Geral'}</p>
           <h3 style="margin:4px 0;">${game.name}</h3>
@@ -272,28 +274,71 @@ if (cached && cached.length > 0) {
   showSkeletons(8);
 }
 
+/* ── LAZY LOAD DE BANNERS ───────────────────────────────
+   Busca o banner individualmente só quando o card
+   entra na área visível da tela (IntersectionObserver).
+────────────────────────────────────────────────────── */
+const bannerObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const img = entry.target;
+    const gameId = img.dataset.gameId;
+    if (!gameId || img.dataset.loaded) return;
+    img.dataset.loaded = '1';
+    bannerObserver.unobserve(img);
+
+    db.ref("games/" + gameId + "/banner").once("value", snap => {
+      const bannerData = snap.val();
+      if (bannerData) {
+        img.style.opacity = '0';
+        img.src = bannerData;
+        img.onload = () => {
+          img.style.transition = 'opacity 0.35s ease';
+          img.style.opacity = '1';
+        };
+      }
+    });
+  });
+}, { rootMargin: '300px' });
+
+function observeBanners() {
+  document.querySelectorAll('img[data-game-id]:not([data-loaded])').forEach(img => {
+    bannerObserver.observe(img);
+  });
+}
+
+/* ── FIREBASE: uma requisição, sem banners ──────────────
+   Usa a SDK do Firebase mas filtra o campo banner
+   antes de guardar em memória e no cache.
+────────────────────────────────────────────────────── */
 db.ref("games").once("value", snap => {
   const data = snap.val() || {};
-  allGames = Object.keys(data).map(key => ({ ...data[key], id: key }));
+  allGames = Object.keys(data).map(key => {
+    const { banner, ...meta } = data[key];
+    return { ...meta, id: key, _hasBanner: !!banner };
+  });
   isInitialLoad = false;
   saveCache(allGames);
   renderGames();
+  setTimeout(observeBanners, 50);
 
-  // Após o carregamento inicial, fica escutando só mudanças
-  // (child_changed, child_added, child_removed) — muito mais leve
-  // do que ouvir o nó inteiro a cada alteração
   db.ref("games").on("child_added", snap => {
-    if (allGames.find(g => g.id === snap.key)) return; // já existe
-    allGames.push({ ...snap.val(), id: snap.key });
+    if (allGames.find(g => g.id === snap.key)) return;
+    const { banner, ...meta } = snap.val();
+    allGames.push({ ...meta, id: snap.key, _hasBanner: !!banner });
     saveCache(allGames);
     renderGames();
+    setTimeout(observeBanners, 50);
   });
 
   db.ref("games").on("child_changed", snap => {
     const idx = allGames.findIndex(g => g.id === snap.key);
-    if (idx !== -1) allGames[idx] = { ...snap.val(), id: snap.key };
+    const { banner, ...meta } = snap.val();
+    const updated = { ...meta, id: snap.key, _hasBanner: !!banner };
+    if (idx !== -1) allGames[idx] = updated;
     saveCache(allGames);
     renderGames();
+    setTimeout(observeBanners, 50);
   });
 
   db.ref("games").on("child_removed", snap => {
@@ -480,11 +525,4 @@ window.saveGame = () => {
     resize();
     stars.forEach(s => {
       if (s.x > canvas.width)  s.x = Math.random() * canvas.width;
-      if (s.y > canvas.height) s.y = Math.random() * canvas.height;
-    });
-  });
-
-  init();
-  draw();
-})();
-  
+      if (s.y > canvas.height) s.y = Mat
