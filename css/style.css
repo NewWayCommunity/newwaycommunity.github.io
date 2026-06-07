@@ -8,6 +8,31 @@ body {
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
   transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* ── ESTRELAS ───────────────────────────────────────── */
+#stars-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.dark #stars-canvas {
+  opacity: 1;
+}
+
+/* Garante que o conteúdo fique acima das estrelas */
+header, .search-bar, main, .games-grid, .modal-overlay, #add-btn,
+div[style*="justify-content: center"] {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── HEADER ─────────────────────────────────────────── */
@@ -84,14 +109,8 @@ md-outlined-text-field#search {
 }
 
 @keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .game-card:hover {
@@ -104,7 +123,6 @@ md-outlined-text-field#search {
   box-shadow: 0 0 0 1px var(--md-sys-color-primary-container);
 }
 
-/* Imagem com overlay gradiente */
 .game-card img {
   width: 100%;
   aspect-ratio: 16/9;
@@ -123,7 +141,6 @@ md-outlined-text-field#search {
 }
 
 .card-body p:first-child {
-  /* Categoria */
   display: inline-flex;
   align-items: center;
   background-color: var(--md-sys-color-primary-container);
@@ -261,7 +278,7 @@ label {
   color: var(--md-sys-color-on-surface);
 }
 
-/* ── LOAD MORE BUTTON ───────────────────────────────── */
+/* ── LOAD MORE ──────────────────────────────────────── */
 #load-more-btn {
   min-width: 160px;
   transition: transform 0.2s ease;
@@ -279,27 +296,9 @@ label {
 
 /* ── RESPONSIVE ─────────────────────────────────────── */
 @media (max-width: 600px) {
-  header {
-    padding: 18px 16px;
-  }
-
-  .header-content h1 {
-    font-size: 1.1rem;
-  }
-
-  .search-bar {
-    padding: 16px 16px 8px;
-    flex-wrap: wrap;
-  }
-
-  .games-grid {
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 16px;
-  }
-
-  #add-btn {
-    bottom: 20px;
-    right: 20px;
-  }
+  header { padding: 18px 16px; }
+  .header-content h1 { font-size: 1.1rem; }
+  .search-bar { padding: 16px 16px 8px; flex-wrap: wrap; }
+  .games-grid { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  #add-btn { bottom: 20px; right: 20px; }
 }
