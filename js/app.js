@@ -237,7 +237,7 @@ function renderGames() {
           <h3 style="margin:4px 0;">${game.name}</h3>
           <p style="margin:12px 0;font-size:14px;opacity:0.8;">${game.desc || ''}</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${(game.links || []).map((l, i) => `<md-filled-tonal-button onclick="window.open('${l}')">Link ${i + 1}</md-filled-tonal-button>`).join('')}
+            ${(game.linkObjects || (game.links || []).map((u,i)=>({label:`Link ${i+1}`,url:u}))).map(l => `<md-filled-tonal-button onclick="window.open('${l.url}')">${l.label}</md-filled-tonal-button>`).join('')}
           </div>
         </div>
       </md-elevated-card>`;
@@ -327,6 +327,7 @@ window.editGame = (id) => {
   document.getElementById("pinned").checked = !!game.pinned;
   document.getElementById("linksContainer").innerHTML = "";
   if (game.links) game.links.forEach(l => addLinkField(l));
+  if (game.linkObjects) game.linkObjects.forEach(l => addLinkField(l));
   document.getElementById('modal').classList.add('active');
 };
 
@@ -334,15 +335,22 @@ window.deleteGame = (id) => {
   if (confirm("Deseja excluir?")) db.ref("games/" + id).remove();
 };
 
-window.addLinkField = (val = "") => {
+window.addLinkField = (link = {}) => {
   const container = document.getElementById('linksContainer');
-  if (container.querySelectorAll('.link-input').length >= 4) return;
+  if (container.querySelectorAll('.link-row').length >= 4) return;
+  const label = typeof link === 'string' ? '' : (link.label || '');
+  const url   = typeof link === 'string' ? link : (link.url || '');
   const row = document.createElement('div');
-  row.style = "display:flex;align-items:center;gap:8px;margin-bottom:8px;";
-  row.innerHTML = `<md-outlined-text-field label="URL" class="link-input" style="flex:1" value="${val}"></md-outlined-text-field>
-    <md-icon-button type="button" onclick="this.parentElement.remove();document.getElementById('addLinkBtn').disabled=false;"><md-icon>delete</md-icon></md-icon-button>`;
+  row.className = 'link-row';
+  row.style = "display:flex;flex-direction:column;gap:6px;margin-bottom:12px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid var(--md-sys-color-outline-variant);";
+  row.innerHTML = `
+    <md-outlined-text-field label="Nome do link *" class="link-label-input" maxlength="20" value="${label}" style="width:100%"></md-outlined-text-field>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <md-outlined-text-field label="URL *" class="link-url-input" style="flex:1" value="${url}"></md-outlined-text-field>
+      <md-icon-button type="button" onclick="this.closest('.link-row').remove();document.getElementById('addLinkBtn').disabled=false;"><md-icon>delete</md-icon></md-icon-button>
+    </div>`;
   container.appendChild(row);
-  if (container.querySelectorAll('.link-input').length >= 4)
+  if (container.querySelectorAll('.link-row').length >= 4)
     document.getElementById('addLinkBtn').disabled = true;
 };
 
@@ -356,7 +364,23 @@ window.saveGame = () => {
   const desc     = descField.value.trim();
   const category = categoryField.value.trim() || "Geral";
   const pinned   = document.getElementById("pinned").checked;
-  const links    = Array.from(document.querySelectorAll(".link-input")).map(i => i.value).filter(v => v);
+  // Coleta links como objetos {label, url}
+  const linkRows = Array.from(document.querySelectorAll('.link-row'));
+  let linkObjects = [];
+  let linkError = false;
+  for (const row of linkRows) {
+    const labelVal = row.querySelector('.link-label-input').value.trim();
+    const urlVal   = row.querySelector('.link-url-input').value.trim();
+    const labelEl  = row.querySelector('.link-label-input');
+    const urlEl    = row.querySelector('.link-url-input');
+    labelEl.error = urlEl.error = false;
+    if (!labelVal) { labelEl.error = true; labelEl.errorText = "Nome obrigatório."; linkError = true; }
+    if (!urlVal)   { urlEl.error   = true; urlEl.errorText   = "URL obrigatória.";  linkError = true; }
+    if (labelVal && urlVal) linkObjects.push({ label: labelVal, url: urlVal });
+  }
+  if (linkError) return;
+  // Compatibilidade reversa: mantém 'links' como array de URLs
+  const links = linkObjects.map(l => l.url);
   const file     = document.getElementById("banner").files[0];
 
   nameField.error = descField.error = categoryField.error = false;
@@ -378,7 +402,7 @@ window.saveGame = () => {
   }
 
   const pushData = (imgUrl) => {
-    const data = { name, desc, category, links, pinned };
+    const data = { name, desc, category, links, linkObjects, pinned };
     if (imgUrl) {
       data.banner = imgUrl;
     } else if (id) {
