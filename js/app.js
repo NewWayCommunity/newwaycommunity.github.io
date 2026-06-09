@@ -127,19 +127,6 @@ applyTheme(localStorage.getItem('user-theme') || 'auto');
 /* ── FORMATAÇÃO DE DATA ─────────────────────────────── */
 function formatDate(timestamp) {
   if (!timestamp) return '';
-  const now  = Date.now();
-  const diff = now - timestamp;
-  const days = diff / (1000 * 60 * 60 * 24);
-
-  if (days < 1) {
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours < 1) return 'agora mesmo';
-    return `há ${hours} hora${hours > 1 ? 's' : ''}`;
-  }
-  if (days < 3) {
-    const d = Math.floor(days);
-    return `há ${d} dia${d > 1 ? 's' : ''}`;
-  }
   return new Date(timestamp).toLocaleDateString('pt-BR');
 }
 
