@@ -124,6 +124,25 @@ window.cycleTheme = () => {
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
 
+/* ── FORMATAÇÃO DE DATA ─────────────────────────────── */
+function formatDate(timestamp) {
+  if (!timestamp) return '';
+  const now  = Date.now();
+  const diff = now - timestamp;
+  const days = diff / (1000 * 60 * 60 * 24);
+
+  if (days < 1) {
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'agora mesmo';
+    return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+  }
+  if (days < 3) {
+    const d = Math.floor(days);
+    return `há ${d} dia${d > 1 ? 's' : ''}`;
+  }
+  return new Date(timestamp).toLocaleDateString('pt-BR');
+}
+
 /* ── FILTRO DE CATEGORIAS ───────────────────────────── */
 function updateCategoryFilter() {
   const filterSelect = document.getElementById('filter-category');
@@ -228,6 +247,7 @@ function renderGames() {
           <p style="color:var(--md-sys-color-primary);font-size:11px;font-weight:bold;margin:0;text-transform:uppercase;">${game.category || 'Geral'}</p>
           <h3 style="margin:4px 0;">${game.name}</h3>
           <p style="margin:12px 0;font-size:14px;opacity:0.8;">${game.desc || ''}</p>
+          ${game.createdAt ? `<p style="margin:0 0 12px;font-size:11px;opacity:0.45;display:flex;align-items:center;gap:4px;"><md-icon style="font-size:13px;width:13px;height:13px;">calendar_today</md-icon>${formatDate(game.createdAt)}</p>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap;">${linkButtons}</div>
         </div>
       </md-elevated-card>`;
@@ -391,7 +411,7 @@ window.saveGame = () => {
 
   const bannerUrl = document.getElementById("banner-url").value.trim();
 
-  const data = { name, desc, category, links, linkObjects, pinned };
+  const data = { name, desc, category, links, linkObjects, pinned, createdAt: id ? (allGames.find(g => g.id === id)?.createdAt || Date.now()) : Date.now() };
   if (bannerUrl) {
     data.banner = bannerUrl;
   } else if (id) {
@@ -464,4 +484,3 @@ window.saveGame = () => {
   init();
   draw();
 })();
-  
