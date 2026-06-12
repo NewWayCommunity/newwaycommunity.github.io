@@ -1,4 +1,4 @@
-/* ── REFORMA COMPLETA DE ESTLO: PREMIUM GAMER UI ── */
+/* ── CONFIGURAÇÕES GERAIS E RESETS ── */
 :root {
   --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --glow-purple: 0 0 20px rgba(157, 78, 221, 0.4);
@@ -9,7 +9,10 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
   padding: 0;
+  background-color: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
   transition: background-color 0.4s var(--transition-smooth), color 0.4s var(--transition-smooth);
+  overflow-x: hidden;
 }
 
 /* ── CANVAS DE FUNDO INTERATIVO ── */
@@ -39,14 +42,114 @@ header {
   transition: all 0.3s var(--transition-smooth);
 }
 
-/* ── PREMIUM CARDS: JOGOS ── */
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* ── BARRA DE PESQUISA REFEITA ── */
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 480px;
+  margin: 0 16px;
+}
+
+.search-container md-outlined-text-field {
+  width: 100%;
+}
+
+/* ── SIDEBAR OVERLAY & SIDEBAR ── */
+#sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 299;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#sidebar-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100%;
+  z-index: 300;
+  border-radius: 0 24px 24px 0;
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 10px 0 40px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s var(--transition-smooth);
+  overflow-y: auto;
+}
+
+#sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  gap: 4px;
+}
+
+.sidebar-item {
+  margin: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  --md-text-button-container-shape: 12px;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.sidebar-item.active {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-weight: 600;
+}
+
+/* ── PREMIUM CARDS GRID ── */
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
 .games-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
   padding: 24px;
-  position: relative;
-  z-index: 1;
 }
 
 .game-card {
@@ -56,6 +159,8 @@ header {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
   transition: transform 0.3s var(--transition-smooth), box-shadow 0.3s var(--transition-smooth), border-color 0.3s var(--transition-smooth);
 }
 
@@ -72,13 +177,13 @@ header {
 }
 
 .game-card.pinned::before {
-  content: "✦ PINNED";
+  content: "✦ FIXADO";
   position: absolute;
   top: 12px;
   right: 12px;
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
-  font-size: 0.75rem;
+  font-size: 0.70rem;
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 20px;
@@ -106,37 +211,84 @@ header {
   transform: scale(1.06);
 }
 
+.game-info {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.game-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.game-desc {
+  font-size: 0.88rem;
+  opacity: 0.75;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
 /* ── BADGES & CATEGORIAS DINÂMICAS ── */
 .category-badge {
   display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 8px;
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
   text-transform: uppercase;
   background: var(--badge-bg);
   color: var(--md-sys-color-primary);
   border: 1px solid var(--border-color-accent);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  letter-spacing: 0.4px;
 }
 
-/* ── REFORMA DA SIDEBAR ── */
-#sidebar {
-  border-radius: 0 24px 24px 0;
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid var(--border-color);
-  box-shadow: 10px 0 40px rgba(0,0,0,0.15);
+.game-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
 }
 
-.sidebar-item {
-  margin: 4px 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+.game-links md-subtle-button, .game-links md-filled-button {
+  max-width: 100%;
 }
 
-.sidebar-item.active {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-  font-weight: 600;
+/* Botão Carregar Mais */
+#load-more-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* ── RESPONSIVIDADE ADAPTADA ── */
+@media (max-width: 600px) {
+  header { padding: 12px 16px; }
+  .search-container { margin: 0 8px; }
+  .games-grid { padding: 16px; gap: 16px; }
+}
+
+/* ── SKELETON LOADING ANIMADO ── */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-wrapper {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+.skeleton-card {
+  height: 320px;
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  opacity: 0.6;
 }
