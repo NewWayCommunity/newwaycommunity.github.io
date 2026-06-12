@@ -1,22 +1,63 @@
 .light {
-  /* ── AMBIENTE LAVANDA PASTEL PREMIUM ── */
-  --md-sys-color-background: rgb(247, 244, 252);
-  --md-sys-color-surface: rgb(255, 255, 255);
-  --header-bg: rgba(247, 244, 252, 0.8);
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --sidebar-bg: rgba(243, 237, 250, 0.9);
-  --border-color: rgba(106, 76, 147, 0.1);
-  --border-color-accent: rgba(106, 76, 147, 0.2);
-  --badge-bg: rgba(106, 76, 147, 0.06);
+  --md-sys-color-primary: rgb(100 45 160);
+  --md-sys-color-surface-tint: rgb(100 45 160);
+  --md-sys-color-on-primary: rgb(255 255 255);
+  --md-sys-color-primary-container: rgb(232 200 255);
+  --md-sys-color-on-primary-container: rgb(60 10 115);
 
-  --md-sys-color-primary: rgb(106, 76, 147);
-  --md-sys-color-surface-tint: rgb(106, 76, 147);
-  --md-sys-color-on-primary: rgb(255, 255, 255);
-  --md-sys-color-primary-container: rgb(235, 219, 255);
-  --md-sys-color-on-primary-container: rgb(46, 0, 89);
-  
-  --md-sys-color-outline: rgb(122, 107, 140);
-  --md-sys-color-outline-variant: rgb(214, 201, 230);
+  --md-sys-color-secondary: rgb(88 65 118);
+  --md-sys-color-on-secondary: rgb(255 255 255);
+  --md-sys-color-secondary-container: rgb(230 205 255);
+  --md-sys-color-on-secondary-container: rgb(55 35 85);
 
-  color: rgb(40, 30, 55);
-}
+  --md-sys-color-tertiary: rgb(120 55 100);
+  --md-sys-color-on-tertiary: rgb(255 255 255);
+  --md-sys-color-tertiary-container: rgb(255 205 238);
+  --md-sys-color-on-tertiary-container: rgb(80 20 65);
+
+  --md-sys-color-error: rgb(186 26 26);
+  --md-sys-color-on-error: rgb(255 255 255);
+  --md-sys-color-error-container: rgb(255 218 214);
+  --md-sys-color-on-error-container: rgb(147 0 10);
+
+  /* Branco puro */
+  --md-sys-color-background: rgb(255 255 255);
+  --md-sys-color-on-background: rgb(22 15 32);
+  --md-sys-color-surface: rgb(255 255 255);
+  --md-sys-color-on-surface: rgb(22 15 32);
+
+  --md-sys-color-surface-variant: rgb(238 228 248);
+  --md-sys-color-on-surface-variant: rgb(68 52 90);
+  --md-sys-color-outline: rgb(115 95 140);
+  --md-sys-color-outline-variant: rgb(210 195 228);
+
+  --md-sys-color-shadow: rgb(0 0 0);
+  --md-sys-color-scrim: rgb(0 0 0);
+  --md-sys-color-inverse-surface: rgb(45 32 62);
+  --md-sys-color-inverse-on-surface: rgb(250 240 255);
+  --md-sys-color-inverse-primary: rgb(200 130 255);
+
+  --md-sys-color-primary-fixed: rgb(232 200 255);
+  --md-sys-color-on-primary-fixed: rgb(32 0 72);
+  --md-sys-color-primary-fixed-dim: rgb(180 120 245);
+  --md-sys-color-on-primary-fixed-variant: rgb(75 30 130);
+
+  --md-sys-color-secondary-fixed: rgb(230 205 255);
+  --md-sys-color-on-secondary-fixed: rgb(28 15 48);
+  --md-sys-color-secondary-fixed-dim: rgb(190 160 225);
+  --md-sys-color-on-secondary-fixed-variant: rgb(65 45 95);
+
+  --md-sys-color-tertiary-fixed: rgb(255 205 238);
+  --md-sys-color-on-tertiary-fixed: rgb(48 8 38);
+  --md-sys-color-tertiary-fixed-dim: rgb(235 148 205);
+  --md-sys-color-on-tertiary-fixed-variant: rgb(95 38 78);
+
+  /* Superfícies brancas limpas */
+  --md-sys-color-surface-dim: rgb(230 222 240);
+  --md-sys-color-surface-bright: rgb(255 255 255);
+  --md-sys-color-surface-container-lowest: rgb(255 255 255);
+  --md-sys-color-surface-container-low: rgb(252 248 255);
+  --md-sys-color-surface-container: rgb(247 242 255);
+  --md-sys-color-surface-container-high: rgb(240 234 250);
+  --md-sys-color-surface-container-highest: rgb(232 225 244);
+                                  }
