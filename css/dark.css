@@ -1,26 +1,63 @@
 .dark {
-  /* ── AMBIENTE OLED DEEP PURPLE ── */
-  --md-sys-color-background: rgb(8, 4, 15);
-  --md-sys-color-on-background: rgb(235, 230, 245);
-  --md-sys-color-surface: rgb(15, 10, 26);
-  --header-bg: rgba(12, 6, 22, 0.85);
-  --card-bg: rgba(22, 14, 38, 0.7);
-  --sidebar-bg: rgba(14, 8, 24, 0.9);
-  --border-color: rgba(157, 78, 221, 0.18);
-  --border-color-accent: rgba(157, 78, 221, 0.35);
-  --badge-bg: rgba(157, 78, 221, 0.15);
+  --md-sys-color-primary: rgb(200 130 255);
+  --md-sys-color-surface-tint: rgb(200 130 255);
+  --md-sys-color-on-primary: rgb(50 0 95);
+  --md-sys-color-primary-container: rgb(85 20 145);
+  --md-sys-color-on-primary-container: rgb(245 215 255);
 
-  --md-sys-color-primary: rgb(187, 134, 252);
-  --md-sys-color-surface-tint: rgb(187, 134, 252);
-  --md-sys-color-on-primary: rgb(35, 0, 70);
-  --md-sys-color-primary-container: rgb(74, 16, 122);
-  --md-sys-color-on-primary-container: rgb(243, 228, 255);
+  --md-sys-color-secondary: rgb(190 160 225);
+  --md-sys-color-on-secondary: rgb(45 28 68);
+  --md-sys-color-secondary-container: rgb(68 48 98);
+  --md-sys-color-on-secondary-container: rgb(230 210 255);
 
-  --md-sys-color-secondary: rgb(204, 186, 224);
-  --md-sys-color-on-secondary: rgb(51, 33, 71);
-  --md-sys-color-secondary-container: rgb(74, 55, 96);
-  --md-sys-color-on-secondary-container: rgb(237, 221, 255);
+  --md-sys-color-tertiary: rgb(240 155 210);
+  --md-sys-color-on-tertiary: rgb(75 15 58);
+  --md-sys-color-tertiary-container: rgb(110 35 88);
+  --md-sys-color-on-tertiary-container: rgb(255 210 240);
 
-  --md-sys-color-outline: rgb(157, 140, 178);
-  --md-sys-color-outline-variant: rgb(74, 58, 94);
+  --md-sys-color-error: rgb(255 180 171);
+  --md-sys-color-on-error: rgb(105 0 5);
+  --md-sys-color-error-container: rgb(147 0 10);
+  --md-sys-color-on-error-container: rgb(255 218 214);
+
+  /* Fundo escuro com forte toque roxo */
+  --md-sys-color-background: rgb(10 5 18);
+  --md-sys-color-on-background: rgb(238 225 255);
+  --md-sys-color-surface: rgb(10 5 18);
+  --md-sys-color-on-surface: rgb(238 225 255);
+
+  --md-sys-color-surface-variant: rgb(62 42 90);
+  --md-sys-color-on-surface-variant: rgb(205 185 228);
+  --md-sys-color-outline: rgb(145 115 175);
+  --md-sys-color-outline-variant: rgb(58 38 85);
+
+  --md-sys-color-shadow: rgb(0 0 0);
+  --md-sys-color-scrim: rgb(0 0 0);
+  --md-sys-color-inverse-surface: rgb(232 220 245);
+  --md-sys-color-inverse-on-surface: rgb(42 28 60);
+  --md-sys-color-inverse-primary: rgb(115 55 170);
+
+  --md-sys-color-primary-fixed: rgb(245 215 255);
+  --md-sys-color-on-primary-fixed: rgb(32 0 65);
+  --md-sys-color-primary-fixed-dim: rgb(200 130 255);
+  --md-sys-color-on-primary-fixed-variant: rgb(85 20 145);
+
+  --md-sys-color-secondary-fixed: rgb(230 210 255);
+  --md-sys-color-on-secondary-fixed: rgb(26 12 48);
+  --md-sys-color-secondary-fixed-dim: rgb(190 160 225);
+  --md-sys-color-on-secondary-fixed-variant: rgb(68 48 98);
+
+  --md-sys-color-tertiary-fixed: rgb(255 210 240);
+  --md-sys-color-on-tertiary-fixed: rgb(48 5 38);
+  --md-sys-color-tertiary-fixed-dim: rgb(240 155 210);
+  --md-sys-color-on-tertiary-fixed-variant: rgb(110 35 88);
+
+  /* Superfícies roxo profundo */
+  --md-sys-color-surface-dim: rgb(10 5 18);
+  --md-sys-color-surface-bright: rgb(52 32 80);
+  --md-sys-color-surface-container-lowest: rgb(6 2 12);
+  --md-sys-color-surface-container-low: rgb(18 10 30);
+  --md-sys-color-surface-container: rgb(24 14 40);
+  --md-sys-color-surface-container-high: rgb(34 20 55);
+  --md-sys-color-surface-container-highest: rgb(46 28 72);
 }
