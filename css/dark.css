@@ -1,13 +1,14 @@
 .dark {
   /* ── AMBIENTE OLED DEEP PURPLE ── */
   --md-sys-color-background: rgb(8, 4, 15);
+  --md-sys-color-on-background: rgb(235, 230, 245);
   --md-sys-color-surface: rgb(15, 10, 26);
-  --header-bg: rgba(12, 6, 22, 0.75);
-  --card-bg: rgba(22, 14, 38, 0.65);
-  --sidebar-bg: rgba(14, 8, 24, 0.85);
-  --border-color: rgba(157, 78, 221, 0.15);
-  --border-color-accent: rgba(157, 78, 221, 0.3);
-  --badge-bg: rgba(157, 78, 221, 0.12);
+  --header-bg: rgba(12, 6, 22, 0.85);
+  --card-bg: rgba(22, 14, 38, 0.7);
+  --sidebar-bg: rgba(14, 8, 24, 0.9);
+  --border-color: rgba(157, 78, 221, 0.18);
+  --border-color-accent: rgba(157, 78, 221, 0.35);
+  --badge-bg: rgba(157, 78, 221, 0.15);
 
   --md-sys-color-primary: rgb(187, 134, 252);
   --md-sys-color-surface-tint: rgb(187, 134, 252);
@@ -22,6 +23,4 @@
 
   --md-sys-color-outline: rgb(157, 140, 178);
   --md-sys-color-outline-variant: rgb(74, 58, 94);
-  
-  color: rgb(230, 220, 240);
 }
