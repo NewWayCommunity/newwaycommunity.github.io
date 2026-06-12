@@ -95,6 +95,9 @@
         <md-icon-button onclick="handleAuthAction()">
           <md-icon id="auth-icon">admin_panel_settings</md-icon>
         </md-icon-button>
+        <md-icon-button onclick="toggleMusic()" id="music-btn">
+          <md-icon id="music-icon">music_off</md-icon>
+        </md-icon-button>
         <md-icon-button onclick="cycleTheme()">
           <md-icon id="theme-icon">brightness_auto</md-icon>
         </md-icon-button>
@@ -175,6 +178,11 @@
       </div>
     </md-elevated-card>
   </div>
+
+  <!-- ── MÚSICA DE FUNDO ── -->
+  <audio id="bg-music" loop>
+    <source src="https://drive.google.com/uc?export=download&id=175mgW1h5EqXLr3RK7qAk1q2B73bi2ckY" type="audio/mpeg">
+  </audio>
 
   <script src="js/app.js"></script>
 </body>
