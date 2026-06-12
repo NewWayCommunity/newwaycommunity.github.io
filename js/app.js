@@ -445,6 +445,45 @@ window.saveGame = () => {
   closeModal();
 };
 
+/* ── MÚSICA DE FUNDO ───────────────────────────────── */
+let musicPlaying = false;
+
+window.toggleMusic = () => {
+  const audio = document.getElementById('bg-music');
+  const icon  = document.getElementById('music-icon');
+  if (!audio) return;
+
+  if (musicPlaying) {
+    audio.pause();
+    icon.innerText = 'music_off';
+    musicPlaying = false;
+    localStorage.setItem('nwc_music', '0');
+  } else {
+    audio.volume = 0.4;
+    audio.play().then(() => {
+      icon.innerText = 'music_note';
+      musicPlaying = true;
+      localStorage.setItem('nwc_music', '1');
+    }).catch(() => {
+      icon.innerText = 'music_off';
+    });
+  }
+};
+
+// Retoma música se estava tocando antes
+window.addEventListener('load', () => {
+  if (localStorage.getItem('nwc_music') === '1') {
+    const audio = document.getElementById('bg-music');
+    if (audio) {
+      audio.volume = 0.4;
+      audio.play().then(() => {
+        document.getElementById('music-icon').innerText = 'music_note';
+        musicPlaying = true;
+      }).catch(() => {});
+    }
+  }
+});
+
 /* ── ESTRELAS ANIMADAS ──────────────────────────────── */
 (function () {
   const canvas = document.createElement('canvas');
@@ -491,7 +530,7 @@ window.saveGame = () => {
   init(); draw();
 })();
 
-//* ── INIT ───────────────────────────────────────────── */
+/* ── INIT ───────────────────────────────────────────── */
 // Inicializa o título e item ativo da sidebar
 document.getElementById('section-title').innerText = SECTIONS[currentSection];
 document.querySelectorAll('.sidebar-item').forEach(btn => {
