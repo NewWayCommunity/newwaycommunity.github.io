@@ -55,7 +55,7 @@ window.closeSidebar = () => {
 };
 
 /* ── CACHE LOCAL ────────────────────────────────────── */
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 10 * 1000; // 10 segundos
 
 function cacheKey(section) { return `nwc_cache_${section}`; }
 
