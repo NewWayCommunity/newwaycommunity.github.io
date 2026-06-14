@@ -22,6 +22,8 @@ let currentDbRef = null; // referência Firebase ativa
 /* ── SEÇÕES ─────────────────────────────────────────── */
 const SECTIONS = {
   games_android:  'Jogos Android',
+  games_hl1:      'Half Life 1',
+  games_hl2:      'Half Life 2',
   games_emulator: 'Jogos de Emulador',
   games_apps:     'Apps Premium',
 };
