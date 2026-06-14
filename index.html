@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Explore a maior curadoria de jogos mobile e emuladores de alta performance.">
-  <meta name="author" content="Koval Lamb">
+  <meta name="author" content="Kali Kyle">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://newwaycommunity.github.io/">
@@ -50,40 +50,41 @@
 </head>
 <body>
 
-  <!-- ── SIDEBAR OVERLAY ── -->
-  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <div class="custom-sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
-  <!-- ── SIDEBAR ── -->
-  <aside id="sidebar">
-    <div class="sidebar-header">
-      <span class="sidebar-title">New Way Community</span>
-      <md-icon-button onclick="closeSidebar()"><md-icon>close</md-icon></md-icon-button>
+  <aside class="custom-sidebar" id="sidebar">
+    <div class="drawer-header">
+      <span class="drawer-title">New Way Community</span>
     </div>
-    <nav class="sidebar-nav">
-      <button class="sidebar-item active" data-section="games_android" onclick="switchSection('games_android')">
+    <div class="drawer-nav">
+      <div class="nav-item-wrapper active" data-section="games_android" onclick="switchSection('games_android')">
         <md-icon>smartphone</md-icon>
         <span>Jogos Android</span>
-      </button>
-      <button class="sidebar-item" data-section="games_hl1" onclick="switchSection('games_hl1')">
+        <md-ripple></md-ripple>
+      </div>
+      <div class="nav-item-wrapper" data-section="games_hl1" onclick="switchSection('games_hl1')">
         <md-icon>target</md-icon>
         <span>Half Life 1</span>
-      </button>
-      <button class="sidebar-item" data-section="games_hl2" onclick="switchSection('games_hl2')">
+        <md-ripple></md-ripple>
+      </div>
+      <div class="nav-item-wrapper" data-section="games_hl2" onclick="switchSection('games_hl2')">
         <md-icon>target</md-icon>
         <span>Half Life 2</span>
-      </button>
-      <button class="sidebar-item" data-section="games_emulator" onclick="switchSection('games_emulator')">
+        <md-ripple></md-ripple>
+      </div>
+      <div class="nav-item-wrapper" data-section="games_emulator" onclick="switchSection('games_emulator')">
         <md-icon>sports_esports</md-icon>
         <span>Jogos de Emulador</span>
-      </button>
-      <button class="sidebar-item" data-section="games_apps" onclick="switchSection('games_apps')">
+        <md-ripple></md-ripple>
+      </div>
+      <div class="nav-item-wrapper" data-section="games_apps" onclick="switchSection('games_apps')">
         <md-icon>apps</md-icon>
         <span>Apps Premium</span>
-      </button>
-    </nav>
+        <md-ripple></md-ripple>
+      </div>
+    </div>
   </aside>
 
-  <!-- ── HEADER ── -->
   <header>
     <div class="header-content">
       <div style="display:flex;align-items:center;gap:8px;">
@@ -113,7 +114,6 @@
     </div>
   </header>
 
-  <!-- ── SEARCH BAR ── -->
   <div class="search-bar">
     <md-outlined-text-field id="search" label="Pesquisar..." oninput="handleSearch()" style="flex:1;">
       <md-icon slot="leading-icon">search</md-icon>
@@ -123,14 +123,12 @@
     </md-outlined-select>
   </div>
 
-  <!-- ── GRID ── -->
   <main class="games-grid" id="games"></main>
 
   <div style="display:flex;justify-content:center;margin:32px 0;">
     <md-filled-button id="load-more-btn" onclick="loadMore()" style="display:none;">Mostrar Mais</md-filled-button>
   </div>
 
-  <!-- ── FABs ── -->
   <md-fab id="add-btn" onclick="openAddModal()" style="display:none;">
     <md-icon slot="icon">add</md-icon>
   </md-fab>
@@ -141,7 +139,6 @@
     <md-icon slot="icon">delete_sweep</md-icon>
   </md-fab>
 
-  <!-- ── MODAL LOGIN ── -->
   <div class="modal-overlay" id="login-modal">
     <md-elevated-card class="modal-content">
       <h2 style="margin:0 0 16px">Acesso Administrativo</h2>
@@ -156,7 +153,6 @@
     </md-elevated-card>
   </div>
 
-  <!-- ── MODAL JOGO ── -->
   <div class="modal-overlay" id="modal">
     <md-elevated-card class="modal-content">
       <h2 id="modalTitle" style="margin:0 0 16px">Adicionar</h2>
@@ -187,7 +183,6 @@
     </md-elevated-card>
   </div>
 
-  <!-- ── MÚSICA DE FUNDO ── -->
   <audio id="bg-music" loop>
     <source src="https://drive.google.com/uc?export=download&id=175mgW1h5EqXLr3RK7qAk1q2B73bi2ckY" type="audio/mpeg">
   </audio>

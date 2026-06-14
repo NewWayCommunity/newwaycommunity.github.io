@@ -1,4 +1,4 @@
-const CACHE_NAME = 'new-way-v2'; // Sürümü v2 yaptım, önceki önbelleği temizler.
+const CACHE_NAME = 'new-way-v3';
 const ASSETS = [
   './',
   './index.html',

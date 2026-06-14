@@ -17,9 +17,8 @@ let isAdmin      = false;
 let visibleCount = 8;
 let lastCategoryList = "";
 let searchTimer;
-let currentDbRef = null; // referência Firebase ativa
+let currentDbRef = null;
 
-/* ── SEÇÕES ─────────────────────────────────────────── */
 const SECTIONS = {
   games_android:  'Jogos Android',
   games_hl1:      'Half Life 1',
@@ -35,12 +34,10 @@ function switchSection(section) {
   currentSection = section;
   localStorage.setItem('nwc_section', section);
 
-  // Atualiza título
   document.getElementById('section-title').innerText = SECTIONS[section];
 
-  // Atualiza item ativo na sidebar
-  document.querySelectorAll('.sidebar-item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.section === section);
+  document.querySelectorAll('.nav-item-wrapper').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-section') === section);
   });
 
   closeSidebar();
@@ -56,8 +53,7 @@ window.closeSidebar = () => {
   document.getElementById('sidebar-overlay').classList.remove('open');
 };
 
-/* ── CACHE LOCAL ────────────────────────────────────── */
-const CACHE_TTL = 10 * 1000; // 10 segundos
+const CACHE_TTL = 10 * 1000;
 
 function cacheKey(section) { return `nwc_cache_${section}`; }
 
@@ -77,7 +73,6 @@ function loadCache(section) {
   } catch (e) { return null; }
 }
 
-/* ── AUTH ───────────────────────────────────────────── */
 firebase.auth().onAuthStateChanged(user => {
   isAdmin = !!user;
   const addBtn       = document.getElementById('add-btn');
@@ -126,7 +121,6 @@ function login() {
     .catch(err => { passField.error = true; passField.errorText = "Erro: " + err.message; });
 }
 
-/* ── TEMA ───────────────────────────────────────────── */
 const themes     = ['auto', 'light', 'dark'];
 const themeIcons = { auto: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' };
 
@@ -150,13 +144,11 @@ window.cycleTheme = () => {
 
 applyTheme(localStorage.getItem('user-theme') || 'auto');
 
-/* ── DATA ───────────────────────────────────────────── */
 function formatDate(ts) {
   if (!ts) return '';
   return new Date(ts).toLocaleDateString('pt-BR');
 }
 
-/* ── FILTRO DE CATEGORIAS ───────────────────────────── */
 function updateCategoryFilter() {
   const sel = document.getElementById('filter-category');
   if (!sel) return;
@@ -172,7 +164,6 @@ function updateCategoryFilter() {
   lastCategoryList = catStr;
 }
 
-/* ── SKELETON ───────────────────────────────────────── */
 function showSkeletons(count = 8) {
   const grid = document.getElementById('games');
   if (!grid) return;
@@ -196,13 +187,11 @@ function showSkeletons(count = 8) {
   grid.innerHTML = html;
 }
 
-/* ── PESQUISA ───────────────────────────────────────── */
 window.handleSearch = () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { visibleCount = 8; renderGames(); }, 400);
 };
 
-/* ── RENDER ─────────────────────────────────────────── */
 function renderGames() {
   const grid           = document.getElementById('games');
   const loadMoreBtn    = document.getElementById('load-more-btn');
@@ -272,9 +261,7 @@ function renderGames() {
 
 window.loadMore = () => { visibleCount += 8; renderGames(); };
 
-/* ── CARREGA SEÇÃO DO FIREBASE ──────────────────────── */
 function loadSection(section) {
-  // Desliga listeners da seção anterior
   if (currentDbRef) { currentDbRef.off(); currentDbRef = null; }
 
   allGames      = [];
@@ -282,12 +269,22 @@ function loadSection(section) {
   visibleCount  = 8;
   lastCategoryList = "";
 
-  // Limpa filtro
   const sel = document.getElementById('filter-category');
   if (sel) { sel.innerHTML = `<md-select-option value="Todas" selected><div slot="headline">Todas</div></md-select-option>`; }
 
-  // Tenta carregar do cache primeiro
   const cached = loadCache(section);
+  
+  if (!navigator.onLine) {
+    isInitialLoad = false;
+    if (cached && cached.length > 0) {
+      allGames = cached;
+    } else {
+      allGames = [];
+    }
+    renderGames();
+    return;
+  }
+
   if (cached && cached.length > 0) {
     allGames = cached;
     isInitialLoad = false;
@@ -330,7 +327,6 @@ function loadSection(section) {
 window.addEventListener('online',  renderGames);
 window.addEventListener('offline', renderGames);
 
-/* ── MODAIS ─────────────────────────────────────────── */
 window.openAddModal = () => {
   document.getElementById("modalTitle").innerText = `Adicionar em ${SECTIONS[currentSection]}`;
   document.getElementById("gameId").value = "";
@@ -447,7 +443,6 @@ window.saveGame = () => {
   closeModal();
 };
 
-/* ── MÚSICA DE FUNDO ───────────────────────────────── */
 let musicPlaying = false;
 
 window.toggleMusic = () => {
@@ -472,7 +467,6 @@ window.toggleMusic = () => {
   }
 };
 
-// Retoma música se estava tocando antes
 window.addEventListener('load', () => {
   if (localStorage.getItem('nwc_music') === '1') {
     const audio = document.getElementById('bg-music');
@@ -486,7 +480,6 @@ window.addEventListener('load', () => {
   }
 });
 
-/* ── ESTRELAS ANIMADAS ──────────────────────────────── */
 (function () {
   const canvas = document.createElement('canvas');
   canvas.id = 'stars-canvas';
@@ -532,12 +525,9 @@ window.addEventListener('load', () => {
   init(); draw();
 })();
 
-/* ── INIT ───────────────────────────────────────────── */
-// Inicializa o título e item ativo da sidebar
 document.getElementById('section-title').innerText = SECTIONS[currentSection];
-document.querySelectorAll('.sidebar-item').forEach(btn => {
-  btn.classList.toggle('active', btn.dataset.section === currentSection);
+document.querySelectorAll('.nav-item-wrapper').forEach(item => {
+  item.classList.toggle('active', item.getAttribute('data-section') === currentSection);
 });
 
-// Carrega a seção salva (ou padrão)
 loadSection(currentSection);
