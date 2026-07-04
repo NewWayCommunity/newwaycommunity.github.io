@@ -20,173 +20,109 @@
   <meta property="twitter:image" content="https://newwaycommunity.github.io/assets/banner.png">
 
   <meta name="google-site-verification" content="u8Kt3NfE1uPUe_vOiuC-VjH1IwrMtROpUuAm_0MGi5s" />
-
-  <title>New Way Community</title>
+  
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-title" content="NWC">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="assets/site.webmanifest">
-
-  <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-  </script>
-
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <script type="module" src="https://esm.run/@material/web/all.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <link rel="stylesheet" href="css/light.css">
   <link rel="stylesheet" href="css/dark.css">
   <link rel="stylesheet" href="css/style.css">
+  
   <style>
-    md-outlined-select::part(menu) { max-height: 250px; }
+    .shutdown-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .goodbye-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin: 0;
+      background: linear-gradient(135deg, #c084fc, #f0abfc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .light .goodbye-title {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   </style>
 </head>
 <body>
 
-  <div class="custom-sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <main class="shutdown-container">
+    <!-- Sadece "Görüşürüz!" Metni -->
+    <h1 class="goodbye-title">Adeus!</h1>
+  </main>
 
-  <aside class="custom-sidebar" id="sidebar">
-    <div class="drawer-header">
-      <span class="drawer-title">New Way Community</span>
-    </div>
-    <div class="drawer-nav">
-      <div class="nav-item-wrapper active" data-section="games_android" onclick="switchSection('games_android')">
-        <md-icon>smartphone</md-icon>
-        <span>Jogos Android</span>
-        <md-ripple></md-ripple>
-      </div>
-      <div class="nav-item-wrapper" data-section="games_hl1" onclick="switchSection('games_hl1')">
-        <md-icon>target</md-icon>
-        <span>Half Life 1</span>
-        <md-ripple></md-ripple>
-      </div>
-      <div class="nav-item-wrapper" data-section="games_hl2" onclick="switchSection('games_hl2')">
-        <md-icon>target</md-icon>
-        <span>Half Life 2</span>
-        <md-ripple></md-ripple>
-      </div>
-      <div class="nav-item-wrapper" data-section="games_emulator" onclick="switchSection('games_emulator')">
-        <md-icon>sports_esports</md-icon>
-        <span>Jogos de Emulador</span>
-        <md-ripple></md-ripple>
-      </div>
-      <div class="nav-item-wrapper" data-section="games_apps" onclick="switchSection('games_apps')">
-        <md-icon>apps</md-icon>
-        <span>Apps Premium</span>
-        <md-ripple></md-ripple>
-      </div>
-    </div>
-  </aside>
+  <script>
+    function applyTheme(theme) {
+      const target = theme === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : theme;
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(target);
+    }
+    applyTheme(localStorage.getItem('user-theme') || 'auto');
 
-  <header>
-    <div class="header-content">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <md-icon-button onclick="openSidebar()">
-          <md-icon>menu</md-icon>
-        </md-icon-button>
-        <h1 id="section-title">Jogos Android</h1>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <md-icon-button onclick="window.open('https://discord.gg/W5DUnEUgtj','_blank')">
-          <md-icon>
-            <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter;">
-              <path d="M18.8943 4.34399C17.5183 3.71467 16.057 3.256 14.5317 3C14.3396 3.33067 14.1263 3.77866 13.977 4.13067C12.3546 3.89599 10.7439 3.89599 9.14391 4.13067C8.99457 3.77866 8.77056 3.33067 8.58922 3C7.05325 3.256 5.59191 3.71467 4.22552 4.34399C1.46286 8.41865 0.716188 12.3973 1.08952 16.3226C2.92418 17.6559 4.69486 18.4666 6.4346 19C6.86126 18.424 7.24527 17.8053 7.57594 17.1546C6.9466 16.92 6.34927 16.632 5.77327 16.2906C5.9226 16.184 6.07194 16.0667 6.21061 15.9493C9.68793 17.5387 13.4543 17.5387 16.889 15.9493C17.0383 16.0667 17.177 16.184 17.3263 16.2906C16.7503 16.632 16.153 16.92 15.5236 17.1546C15.8543 17.8053 16.2383 18.424 16.665 19C18.4036 18.4666 20.185 17.6559 22.01 16.3226C22.4687 11.7787 21.2836 7.83202 18.8943 4.34399ZM8.05593 13.9013C7.01058 13.9013 6.15725 12.952 6.15725 11.7893C6.15725 10.6267 6.98925 9.67731 8.05593 9.67731C9.11191 9.67731 9.97588 10.6267 9.95454 11.7893C9.95454 12.952 9.11191 13.9013 8.05593 13.9013ZM15.065 13.9013C14.0196 13.9013 13.1652 12.952 13.1652 11.7893C13.1652 10.6267 13.9983 9.67731 15.065 9.67731C16.121 9.67731 16.985 10.6267 16.9636 11.7893C16.9636 12.952 16.1317 13.9013 15.065 13.9013Z"></path>
-            </svg>
-          </md-icon>
-        </md-icon-button>
-        <md-icon-button onclick="handleAuthAction()">
-          <md-icon id="auth-icon">admin_panel_settings</md-icon>
-        </md-icon-button>
-        <md-icon-button onclick="toggleMusic()" id="music-btn">
-          <md-icon id="music-icon">music_off</md-icon>
-        </md-icon-button>
-        <md-icon-button onclick="cycleTheme()">
-          <md-icon id="theme-icon">brightness_auto</md-icon>
-        </md-icon-button>
-      </div>
-    </div>
-  </header>
+    (function () {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'stars-canvas';
+      document.body.prepend(canvas);
+      const ctx = canvas.getContext('2d');
+      const stars = [];
 
-  <div class="search-bar">
-    <md-outlined-text-field id="search" label="Pesquisar..." oninput="handleSearch()" style="flex:1;">
-      <md-icon slot="leading-icon">search</md-icon>
-    </md-outlined-text-field>
-    <md-outlined-select id="filter-category" onchange="renderGames()" style="min-width:140px;">
-      <md-select-option value="Todas" selected><div slot="headline">Todas</div></md-select-option>
-    </md-outlined-select>
-  </div>
+      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 
-  <main class="games-grid" id="games"></main>
+      function randomStar() {
+        return {
+          x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+          radius: Math.random() * 1.4 + 0.3, speed: Math.random() * 0.4 + 0.08,
+          opacity: Math.random() * 0.6 + 0.3, twinkle: Math.random() * Math.PI * 2,
+        };
+      }
 
-  <div style="display:flex;justify-content:center;margin:32px 0;">
-    <md-filled-button id="load-more-btn" onclick="loadMore()" style="display:none;">Mostrar Mais</md-filled-button>
-  </div>
+      function init() { resize(); stars.length = 0; for (let i = 0; i < 120; i++) stars.push(randomStar()); }
 
-  <md-fab id="add-btn" onclick="openAddModal()" style="display:none;">
-    <md-icon slot="icon">add</md-icon>
-  </md-fab>
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!document.documentElement.classList.contains('dark')) { requestAnimationFrame(draw); return; }
+        const now = Date.now() / 1000;
+        stars.forEach(s => {
+          const op = s.opacity * (0.7 + 0.3 * Math.sin(now * 0.8 + s.twinkle));
+          const hue = Math.random() > 0.7 ? '270, 80%, 90%' : '0, 0%, 100%';
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, ${op})`; ctx.fill();
+          s.y += s.speed;
+          if (s.y > canvas.height + 2) { s.y = -2; s.x = Math.random() * canvas.width; }
+        });
+        requestAnimationFrame(draw);
+      }
 
-  <md-fab id="delete-all-btn" onclick="deleteAllGames()" variant="tertiary"
-    style="display:none;position:fixed;bottom:32px;right:104px;z-index:100;--md-fab-container-shape:16px;"
-    title="Apagar todos os jogos desta seção">
-    <md-icon slot="icon">delete_sweep</md-icon>
-  </md-fab>
+      window.addEventListener('resize', () => {
+        resize();
+        stars.forEach(s => {
+          if (s.x > canvas.width)  s.x = Math.random() * canvas.width;
+          if (s.y > canvas.height) s.y = Math.random() * canvas.height;
+        });
+      });
 
-  <div class="modal-overlay" id="login-modal">
-    <md-elevated-card class="modal-content">
-      <h2 style="margin:0 0 16px">Acesso Administrativo</h2>
-      <div class="form-scroll">
-        <md-outlined-text-field id="login-email" label="Email" type="email"></md-outlined-text-field>
-        <md-outlined-text-field id="login-pass" label="Senha" type="password"></md-outlined-text-field>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px">
-        <md-text-button onclick="closeLoginModal()">Cancelar</md-text-button>
-        <md-filled-button onclick="login()">Entrar</md-filled-button>
-      </div>
-    </md-elevated-card>
-  </div>
-
-  <div class="modal-overlay" id="modal">
-    <md-elevated-card class="modal-content">
-      <h2 id="modalTitle" style="margin:0 0 16px">Adicionar</h2>
-      <form id="gameForm" class="form-scroll" onsubmit="event.preventDefault()">
-        <input type="hidden" id="gameId">
-        <md-outlined-text-field id="name" label="Nome" maxlength="30"></md-outlined-text-field>
-        <md-outlined-text-field id="desc" label="Descrição" type="textarea" rows="3" maxlength="60"></md-outlined-text-field>
-        <md-outlined-text-field id="category" label="Categoria (Ex: Ação, RPG)" maxlength="20"></md-outlined-text-field>
-        <div id="linksWrapper">
-          <p style="font-size:14px;margin:0 0 8px;opacity:0.7">Links (Máx. 4)</p>
-          <div id="linksContainer"></div>
-          <md-text-button type="button" id="addLinkBtn" onclick="addLinkField()">
-            <md-icon slot="icon">add</md-icon> Adicionar Link
-          </md-text-button>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin:8px 0;">
-          <md-checkbox id="pinned"></md-checkbox>
-          <label for="pinned" style="font-size:14px;">Fixar no topo</label>
-        </div>
-        <md-outlined-text-field id="banner-url" label="URL do Banner (Imgur)" style="width:100%">
-          <md-icon slot="leading-icon">image</md-icon>
-        </md-outlined-text-field>
-      </form>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px">
-        <md-text-button onclick="closeModal()">Cancelar</md-text-button>
-        <md-filled-button onclick="saveGame()">Salvar</md-filled-button>
-      </div>
-    </md-elevated-card>
-  </div>
-
-  <audio id="bg-music" loop>
-    <source src="https://raw.githubusercontent.com/NewWayCommunity/nwc-app/main/app/src/main/res/raw/music.mp3" type="audio/mpeg">
-  </audio>
-
-  <script src="js/app.js"></script>
+      init(); draw();
+    })();
+  </script>
 </body>
 </html>

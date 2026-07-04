@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Página não encontrada - New Way Community">
+  <meta name="author" content="Kali Kyle">
+  <title>404 • Página não encontrada</title>
+  
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+
+  <link rel="stylesheet" href="css/light.css">
+  <link rel="stylesheet" href="css/dark.css">
+  <link rel="stylesheet" href="css/style.css">
+  
+  <style>
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .error-code {
+      font-size: 7rem;
+      font-weight: 700;
+      line-height: 1;
+      margin: 0;
+      background: linear-gradient(135deg, #c084fc, #f0abfc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .light .error-code {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .error-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 16px 0 8px;
+      color: var(--md-sys-color-on-background);
+    }
+    .error-desc {
+      font-size: 0.95rem;
+      max-width: 400px;
+      margin: 0 0 24px;
+      color: var(--md-sys-color-on-surface-variant);
+      line-height: 1.5;
+    }
+    #error-btn {
+      transition: transform 0.2s ease;
+    }
+    #error-btn:hover {
+      transform: scale(1.04);
+    }
+  </style>
+</head>
+<body>
+
+  <main class="error-container">
+    <h1 class="error-code">404</h1>
+    <h2 class="error-title">Página não encontrada</h2>
+    <p class="error-desc">O link que você tentou acessar pode estar quebrado ou a página foi removida da comunidade.</p>
+    
+    <md-filled-button id="error-btn" onclick="window.location.href='index.html'">
+      <md-icon slot="icon">home</md-icon>
+      Voltar ao início
+    </md-filled-button>
+  </main>
+
+  <script>
+    // Tarayıcı temasına göre otomatik uyum sağlama (index.html mantığıyla aynı)
+    function applyTheme(theme) {
+      const target = theme === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : theme;
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(target);
+    }
+    applyTheme(localStorage.getItem('user-theme') || 'auto');
+
+    // Yıldız animasyonu efekt motoru (index.html içindeki kodun klonu, bütünlük bozulmasın diye)
+    (function () {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'stars-canvas';
+      document.body.prepend(canvas);
+      const ctx = canvas.getContext('2d');
+      const stars = [];
+
+      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+
+      function randomStar() {
+        return {
+          x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+          radius: Math.random() * 1.4 + 0.3, speed: Math.random() * 0.4 + 0.08,
+          opacity: Math.random() * 0.6 + 0.3, twinkle: Math.random() * Math.PI * 2,
+        };
+      }
+
+      function init() { resize(); stars.length = 0; for (let i = 0; i < 120; i++) stars.push(randomStar()); }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!document.documentElement.classList.contains('dark')) { requestAnimationFrame(draw); return; }
+        const now = Date.now() / 1000;
+        stars.forEach(s => {
+          const op = s.opacity * (0.7 + 0.3 * Math.sin(now * 0.8 + s.twinkle));
+          const hue = Math.random() > 0.7 ? '270, 80%, 90%' : '0, 0%, 100%';
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, ${op})`; ctx.fill();
+          s.y += s.speed;
+          if (s.y > canvas.height + 2) { s.y = -2; s.x = Math.random() * canvas.width; }
+        });
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener('resize', () => {
+        resize();
+        stars.forEach(s => {
+          if (s.x > canvas.width)  s.x = Math.random() * canvas.width;
+          if (s.y > canvas.height) s.y = Math.random() * canvas.height;
+        });
+      });
+
+      init(); draw();
+    })();
+  </script>
+</body>
+</html>
