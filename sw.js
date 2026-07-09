@@ -1,4 +1,4 @@
-const CACHE_NAME = 'new-way-v3';
+const CACHE_NAME = 'new-way-v4';
 const ASSETS = [
   './',
   './index.html',
