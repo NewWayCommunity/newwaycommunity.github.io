@@ -645,8 +645,6 @@ const FIREBASE_CONFIG = {
   measurementId: "G-NHBHRVZXXW"
 };
 
-// Caminho interno da URL que abre o painel admin (não precisa trocar isso;
-// quem entra pelo site nunca digita esse valor, só a palavra-chave do Firestore).
 const ADMIN_HASH = "#BlackArch98";
 
 
@@ -685,10 +683,6 @@ async function getDiscordWebhook(category){
   }
 }
 
-// ---------- palavra-chave de acesso ao admin, guardada no Firestore (config/admin) ----------
-// Em vez de guardar a palavra-chave em texto puro, guardamos um hash SHA-256 dela
-// (campo "keywordHash"). Assim, mesmo que alguém veja o documento no Firestore,
-// não descobre a palavra-chave real.
 async function sha256Hex(text){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -771,7 +765,6 @@ const sectionIconSvg = {
     const rx = p.r * 1.9, ry = p.r * 0.55;
 
     if(p.hasRing){
-      // metade de trás do anel, atrás do corpo do planeta
       ctx.globalAlpha = p.opacity * 0.5;
       ctx.strokeStyle = p.color;
       ctx.lineWidth = Math.max(1.3, p.r * 0.08);
@@ -780,12 +773,10 @@ const sectionIconSvg = {
       ctx.stroke();
     }
 
-    // corpo do planeta: cor chapada, sem gradiente difuso
     ctx.globalAlpha = p.opacity;
     ctx.fillStyle = p.color;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
 
-    // sombra sutil pra dar volume, sem parecer um brilho de emoji
     ctx.save();
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.clip();
     ctx.globalAlpha = p.opacity * 0.4;
@@ -794,7 +785,6 @@ const sectionIconSvg = {
     ctx.restore();
 
     if(p.hasRing){
-      // metade da frente do anel, por cima do planeta
       ctx.globalAlpha = p.opacity * 0.9;
       ctx.strokeStyle = p.color;
       ctx.lineWidth = Math.max(1.3, p.r * 0.08);
