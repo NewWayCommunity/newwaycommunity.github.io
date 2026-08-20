@@ -1,8 +1,9 @@
 # 🌙 New Way Community
 
-Hub de jogos Android e apps premium, organizados por categoria e gênero, com atualizações publicadas em tempo real.
+Um Hub de jogos Android e Apps Premium, organizados por categoria e gênero, com atualizações publicadas frequentes.
+https://newwaycommunity.vercel.app/
 
-Site estático, sicronizado no Vercel, com painel administrativo próprio e dados em tempo real via Firebase.
+Site visualmente amigável, sicronizado no Vercel, com painel administrativo próprio e dados em tempo real via Firebase.
 
 ---
 
@@ -14,8 +15,8 @@ Site estático, sicronizado no Vercel, com painel administrativo próprio e dado
 - Busca por nome, com skeleton loading enquanto os dados carregam
 - Favoritos salvos localmente no navegador (sem precisar de conta)
 - Até 4 links de download por jogo, com botão "Mostrar mais links" quando há mais de um
-- Botão de **compartilhar** — gera um link direto pra aquele jogo específico
-- Instalável como app (PWA), com ícone e splash screen próprios
+- Botão de **compartilhar** — gera um link direto da publicação para aquele jogo específico
+- Instalável como app (PWA)
 - Selo "Novo" automático em postagens recentes (Removido após 2 dias)
 
 ### Para o admin
