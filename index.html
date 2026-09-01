@@ -113,6 +113,8 @@
   .btn:disabled{opacity:0.55;}
   .icon-btn{padding:0;width:42px;height:42px;flex-shrink:0;}
   .icon-btn .msi{font-size:20px;}
+  .icon-btn-sm{padding:0;width:36px;height:36px;flex-shrink:0;}
+  .icon-btn-sm .msi{font-size:18px;}
 
   
   .app-shell{display:flex;position:relative;z-index:5;}
@@ -626,6 +628,12 @@
         </button>
       </div>
 
+      <div class="field">
+        <label>Link direto (Mediafire, Mega, etc.)</label>
+        <input type="url" id="fDirectUrl" placeholder="https://www.mediafire.com/...">
+        <div class="hint">Usado só no botão "Link Direto" do painel admin — o post vai apontar pra esse link em vez de abrir o site.</div>
+      </div>
+
       <div style="display:flex;gap:10px;margin-top:10px;">
         <button class="btn btn-filled" id="saveGameBtn">Salvar jogo</button>
         <button class="btn btn-tonal" id="cancelFormBtn">Cancelar</button>
@@ -952,9 +960,10 @@ async function postToDiscord(g){
 async function postToDiscordDireto(g){
   const webhookUrl = await getDiscordDiretoWebhook(g.category);
   if(!webhookUrl) return 'not_configured';
+  if(!g.directUrl) return 'no_direct_url';
   const embed = {
     title: g.name || 'Novo jogo',
-    url: buildShareUrl(g),
+    url: g.directUrl,
     description: (g.description || '').slice(0, 300),
     color: 0xFF7FB8,
     thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
@@ -1503,6 +1512,12 @@ onAuthStateChanged(auth, (user)=>{
 });
 document.getElementById('adminReturnBtn').onclick = ()=>{ window.location.hash = ADMIN_HASH; };
 
+function setBtnIcon(btn, iconName, label){
+  btn.innerHTML = `<span class="msi">${iconName}</span>`;
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
+
 function renderAdminList(){
   const card = document.getElementById('gameListCard');
   if(!auth.currentUser) return;
@@ -1529,11 +1544,11 @@ function renderAdminList(){
     <div class="admin-row game-row">
       <div class="name">${g.pinned?'<span class="msi msi-inline">push_pin</span>':''} ${escapeHtml(g.name)} <span class="mono" style="color:var(--md-on-surface-variant);font-weight:400;">v${escapeHtml(g.version||'1.0')}</span></div>
       <div class="actions">
-        <button class="btn btn-tonal btn-sm" data-pin="${g.id}" data-pinned="${g.pinned?1:0}">${g.pinned ? 'Desafixar' : 'Fixar'}</button>
-        <button class="btn btn-tonal btn-sm" data-resend="${g.id}">Reenviar</button>
-        <button class="btn btn-outlined btn-sm" data-direto="${g.id}">Link Direto</button>
-        <button class="btn btn-tonal btn-sm" data-edit="${g.id}">Editar</button>
-        <button class="btn btn-error btn-sm" data-del="${g.id}">Excluir</button>
+        <button class="btn btn-tonal icon-btn-sm${g.pinned?' active':''}" data-pin="${g.id}" data-pinned="${g.pinned?1:0}" title="${g.pinned ? 'Desafixar' : 'Fixar'}" aria-label="${g.pinned ? 'Desafixar' : 'Fixar'}"><span class="msi">push_pin</span></button>
+        <button class="btn btn-tonal icon-btn-sm" data-resend="${g.id}" title="Reenviar" aria-label="Reenviar"><span class="msi">campaign</span></button>
+        <button class="btn btn-outlined icon-btn-sm" data-direto="${g.id}" title="Link Direto" aria-label="Link Direto"><span class="msi">link</span></button>
+        <button class="btn btn-tonal icon-btn-sm" data-edit="${g.id}" title="Editar" aria-label="Editar"><span class="msi">edit</span></button>
+        <button class="btn btn-error icon-btn-sm" data-del="${g.id}" title="Excluir" aria-label="Excluir"><span class="msi">delete</span></button>
       </div>
     </div>
   `).join('');
@@ -1542,38 +1557,41 @@ function renderAdminList(){
     btn.onclick = async ()=>{
       const current = btn.dataset.pinned === '1';
       btn.disabled = true;
-      try{ await updateDoc(doc(db,'games',btn.dataset.pin), { pinned: !current }); }
-      catch(err){ alert('Não foi possível atualizar. Tente novamente.'); }
-      finally{ btn.disabled = false; }
+      try{
+        await updateDoc(doc(db,'games',btn.dataset.pin), { pinned: !current });
+      }catch(err){
+        alert('Não foi possível atualizar. Tente novamente.');
+      }finally{
+        btn.disabled = false;
+      }
     };
   });
   card.querySelectorAll('[data-resend]').forEach(btn=>{
     btn.onclick = async ()=>{
       const g = allGames.find(x=>x.id===btn.dataset.resend);
       if(!g) return;
-      const original = btn.textContent;
       btn.disabled = true;
-      btn.textContent = 'Enviando...';
+      setBtnIcon(btn, 'hourglass_empty', 'Enviando...');
       const result = await postToDiscord(g);
       await postToTelegram(g);
-      if(result === 'ok') btn.textContent = 'Enviado!';
-      else if(result === 'not_configured') btn.textContent = 'Webhook não configurado';
-      else btn.textContent = 'Falhou, tente de novo';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+      if(result === 'ok') setBtnIcon(btn, 'check_circle', 'Enviado!');
+      else if(result === 'not_configured') setBtnIcon(btn, 'link_off', 'Webhook não configurado');
+      else setBtnIcon(btn, 'error', 'Falhou, tente de novo');
+      setTimeout(()=>{ setBtnIcon(btn, 'campaign', 'Reenviar'); btn.disabled = false; }, 2200);
     };
   });
   card.querySelectorAll('[data-direto]').forEach(btn=>{
     btn.onclick = async ()=>{
       const g = allGames.find(x=>x.id===btn.dataset.direto);
       if(!g) return;
-      const original = btn.textContent;
       btn.disabled = true;
-      btn.textContent = 'Enviando...';
+      setBtnIcon(btn, 'hourglass_empty', 'Enviando...');
       const result = await postToDiscordDireto(g);
-      if(result === 'ok') btn.textContent = 'Enviado!';
-      else if(result === 'not_configured') btn.textContent = 'Webhook não configurado';
-      else btn.textContent = 'Falhou, tente de novo';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+      if(result === 'ok') setBtnIcon(btn, 'check_circle', 'Enviado!');
+      else if(result === 'not_configured') setBtnIcon(btn, 'link_off', 'Webhook não configurado');
+      else if(result === 'no_direct_url') setBtnIcon(btn, 'priority_high', 'Sem link direto cadastrado');
+      else setBtnIcon(btn, 'error', 'Falhou, tente de novo');
+      setTimeout(()=>{ setBtnIcon(btn, 'link', 'Link Direto'); btn.disabled = false; }, 2200);
     };
   });
   card.querySelectorAll('[data-del]').forEach(btn=>{
@@ -1677,6 +1695,7 @@ function resetForm(){
   document.getElementById('fDescription').value = '';
   document.getElementById('fIconUrl').value = '';
   document.getElementById('fBannerUrl').value = '';
+  document.getElementById('fDirectUrl').value = '';
   for(let i=1;i<=4;i++){
     document.getElementById('fLinkName'+i).value = '';
     document.getElementById('fLinkUrl'+i).value = '';
@@ -1707,6 +1726,7 @@ function openForm(gameId){
     document.getElementById('fDescription').value = g.description || '';
     document.getElementById('fIconUrl').value = g.iconUrl || '';
     document.getElementById('fBannerUrl').value = g.bannerUrl || '';
+    document.getElementById('fDirectUrl').value = g.directUrl || '';
     const links = getLinks(g);
     visibleLinkRows = Math.max(1, Math.min(4, links.length));
     for(let i=1;i<=4;i++){
@@ -1732,6 +1752,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   const description = document.getElementById('fDescription').value.trim();
   const iconUrl = document.getElementById('fIconUrl').value.trim();
   const bannerUrl = document.getElementById('fBannerUrl').value.trim();
+  const directUrl = document.getElementById('fDirectUrl').value.trim();
   const msg = document.getElementById('formMsg');
   msg.innerHTML = '';
 
@@ -1753,7 +1774,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   saveBtn.textContent = 'Salvando...';
 
   try{
-    const payload = { name, category, genre, version, description, iconUrl, bannerUrl, fileSize, links, architectures };
+    const payload = { name, category, genre, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures };
 
     if(editingGameId){
       await updateDoc(doc(db,'games',editingGameId), payload);
