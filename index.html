@@ -684,6 +684,22 @@ async function getDiscordWebhook(category){
   }
 }
 
+async function getDiscordDiretoWebhook(category){
+  try{
+    const docSnap = await getDoc(doc(db, "config", "discordDireto"));
+    const data = docSnap.data();
+    if(!data) return null;
+    if(category === 'Jogos Android') return data.androidWebhook;
+    if(category === 'GoldSrc Engine') return data.goldsrcWebhook;
+    if(category === 'Source Engine') return data.sourceWebhook;
+    if(category === 'Apps Premium') return data.premiumWebhook;
+    return null;
+  }catch(err){
+    console.warn('Não foi possível buscar o webhook de link direto:', err);
+    return null;
+  }
+}
+
 async function sha256Hex(text){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -929,6 +945,39 @@ async function postToDiscord(g){
     return 'ok';
   }catch(err){
     console.error('Não foi possível avisar o Discord:', err);
+    return 'failed';
+  }
+}
+
+async function postToDiscordDireto(g){
+  const webhookUrl = await getDiscordDiretoWebhook(g.category);
+  if(!webhookUrl) return 'not_configured';
+  const embed = {
+    title: g.name || 'Novo jogo',
+    url: buildShareUrl(g),
+    description: (g.description || '').slice(0, 300),
+    color: 0xFF7FB8,
+    thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
+    image: g.bannerUrl ? { url: g.bannerUrl } : undefined,
+    fields: [
+      { name: 'Seção', value: g.category || '—', inline: true },
+      { name: 'Gênero', value: g.genre || '—', inline: true },
+      { name: 'Versão', value: g.version || '—', inline: true },
+      { name: 'Tamanho', value: g.fileSize || '—', inline: true },
+      { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
+    ],
+    footer: { text: 'New Way Community • Link Direto' },
+    timestamp: new Date().toISOString()
+  };
+  try{
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    return 'ok';
+  }catch(err){
+    console.error('Não foi possível avisar o Discord (link direto):', err);
     return 'failed';
   }
 }
@@ -1482,6 +1531,7 @@ function renderAdminList(){
       <div class="actions">
         <button class="btn btn-tonal btn-sm" data-pin="${g.id}" data-pinned="${g.pinned?1:0}">${g.pinned ? 'Desafixar' : 'Fixar'}</button>
         <button class="btn btn-tonal btn-sm" data-resend="${g.id}">Reenviar</button>
+        <button class="btn btn-outlined btn-sm" data-direto="${g.id}">Link Direto</button>
         <button class="btn btn-tonal btn-sm" data-edit="${g.id}">Editar</button>
         <button class="btn btn-error btn-sm" data-del="${g.id}">Excluir</button>
       </div>
@@ -1506,6 +1556,20 @@ function renderAdminList(){
       btn.textContent = 'Enviando...';
       const result = await postToDiscord(g);
       await postToTelegram(g);
+      if(result === 'ok') btn.textContent = 'Enviado!';
+      else if(result === 'not_configured') btn.textContent = 'Webhook não configurado';
+      else btn.textContent = 'Falhou, tente de novo';
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+    };
+  });
+  card.querySelectorAll('[data-direto]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const g = allGames.find(x=>x.id===btn.dataset.direto);
+      if(!g) return;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+      const result = await postToDiscordDireto(g);
       if(result === 'ok') btn.textContent = 'Enviado!';
       else if(result === 'not_configured') btn.textContent = 'Webhook não configurado';
       else btn.textContent = 'Falhou, tente de novo';
