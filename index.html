@@ -391,6 +391,8 @@
     color:var(--md-on-surface);font-size:14px;font-family:inherit;cursor:pointer;
   }
   .genre-suggest-item:hover{background:var(--md-surface-container-high);color:var(--md-primary);}
+  .credits-row{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:12.5px;color:var(--md-on-surface-variant);}
+  .credits-row b{color:var(--md-on-surface);font-weight:600;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .link-row{display:flex;gap:8px;margin-bottom:10px;}
   .link-row .link-name{flex:0 0 34%;min-width:0;}
@@ -591,6 +593,25 @@
         <div class="hint">Digite um novo gênero ou toque num já usado antes.</div>
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label>Dev by</label>
+          <div class="genre-suggest-wrap">
+            <input type="text" id="fDevBy" placeholder="Ex: Dennaton Games" autocomplete="off">
+            <div class="genre-suggest-list hidden" id="devBySuggestList"></div>
+          </div>
+          <div class="hint">Quem desenvolveu o jogo.</div>
+        </div>
+        <div class="field">
+          <label>Port by</label>
+          <div class="genre-suggest-wrap">
+            <input type="text" id="fPortBy" placeholder="Ex: Dalmac's Ports" autocomplete="off">
+            <div class="genre-suggest-list hidden" id="portBySuggestList"></div>
+          </div>
+          <div class="hint">Quem fez o port pra celular.</div>
+        </div>
+      </div>
+
       <div class="field"><label>Versão</label><input type="text" id="fVersion" placeholder="1.0.0"></div>
       <div class="field">
         <label>Descrição</label>
@@ -737,6 +758,8 @@ loadAdminKeyword();
 
 let allGames = [];
 let genreDocs = [];
+let devByDocs = [];
+let portByDocs = [];
 let activeSection = SECTIONS[0];
 let sortMode = "recent";
 let editingGameId = null;
@@ -947,6 +970,8 @@ async function postToDiscord(g){
     fields: [
       { name: 'Seção', value: g.category || '—', inline: true },
       { name: 'Gênero', value: g.genre || '—', inline: true },
+      { name: 'Dev by', value: g.devBy || '—', inline: true },
+      { name: 'Port by', value: g.portBy || '—', inline: true },
       { name: 'Versão', value: g.version || '—', inline: true },
       { name: 'Tamanho', value: g.fileSize || '—', inline: true },
       { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
@@ -981,6 +1006,8 @@ async function postToDiscordDireto(g){
     fields: [
       { name: 'Seção', value: g.category || '—', inline: true },
       { name: 'Gênero', value: g.genre || '—', inline: true },
+      { name: 'Dev by', value: g.devBy || '—', inline: true },
+      { name: 'Port by', value: g.portBy || '—', inline: true },
       { name: 'Versão', value: g.version || '—', inline: true },
       { name: 'Tamanho', value: g.fileSize || '—', inline: true },
       { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
@@ -1022,6 +1049,8 @@ async function postToTelegram(g) {
         
         if (g.category) caption += `<b>Seção:</b> ${escapeHtml(g.category)}\n`;
         if (g.genre) caption += `<b>Gênero:</b> ${escapeHtml(g.genre)}\n`;
+        if (g.devBy) caption += `<b>Dev by:</b> ${escapeHtml(g.devBy)}\n`;
+        if (g.portBy) caption += `<b>Port by:</b> ${escapeHtml(g.portBy)}\n`;
         if (g.version) caption += `<b>Versão:</b> ${escapeHtml(g.version)}\n`;
         if (g.fileSize) caption += `<b>Tamanho:</b> ${escapeHtml(g.fileSize)}\n`;
         
@@ -1212,6 +1241,106 @@ function startGenresListener(){
   onSnapshot(collection(db,'genres'), (snap)=>{
     genreDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
   }, (err)=>{ console.error('Erro ao carregar gêneros:', err); });
+}
+
+function getAllDevByNames(){
+  const merged = new Map();
+  [...devByDocs.map(d=>d.name), ...allGames.map(g=>g.devBy)].forEach(n=>{
+    if(!n) return;
+    const trimmed = n.trim();
+    const key = trimmed.toLowerCase();
+    if(trimmed && !merged.has(key)) merged.set(key, trimmed);
+  });
+  return Array.from(merged.values()).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function renderDevBySuggestList(filterText){
+  const listEl = document.getElementById('devBySuggestList');
+  const names = getAllDevByNames();
+  const filtered = filterText
+    ? names.filter(n => n.toLowerCase().includes(filterText.toLowerCase()))
+    : names;
+  if(filtered.length === 0){
+    listEl.classList.add('hidden');
+    listEl.innerHTML = '';
+    return;
+  }
+  listEl.innerHTML = filtered.map(n=>`<button type="button" class="genre-suggest-item" data-devby="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join('');
+  listEl.classList.remove('hidden');
+  listEl.querySelectorAll('[data-devby]').forEach(btn=>{
+    btn.addEventListener('mousedown', (e)=>{
+      e.preventDefault();
+      document.getElementById('fDevBy').value = btn.dataset.devby;
+      listEl.classList.add('hidden');
+    });
+  });
+}
+document.getElementById('fDevBy').addEventListener('input', (e)=> renderDevBySuggestList(e.target.value.trim()));
+document.getElementById('fDevBy').addEventListener('focus', (e)=> renderDevBySuggestList(e.target.value.trim()));
+document.getElementById('fDevBy').addEventListener('blur', ()=>{
+  setTimeout(()=> document.getElementById('devBySuggestList').classList.add('hidden'), 150);
+});
+async function ensureDevByExists(name){
+  if(!name) return;
+  const key = name.trim().toLowerCase();
+  const exists = getAllDevByNames().some(n => n.toLowerCase() === key);
+  if(exists) return;
+  try{ await addDoc(collection(db,'devs'), { name: name.trim(), createdAt: serverTimestamp() }); }
+  catch(err){ console.error('Não foi possível salvar o desenvolvedor novo:', err); }
+}
+function startDevsListener(){
+  onSnapshot(collection(db,'devs'), (snap)=>{
+    devByDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }, (err)=>{ console.error('Erro ao carregar desenvolvedores:', err); });
+}
+
+function getAllPortByNames(){
+  const merged = new Map();
+  [...portByDocs.map(d=>d.name), ...allGames.map(g=>g.portBy)].forEach(n=>{
+    if(!n) return;
+    const trimmed = n.trim();
+    const key = trimmed.toLowerCase();
+    if(trimmed && !merged.has(key)) merged.set(key, trimmed);
+  });
+  return Array.from(merged.values()).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function renderPortBySuggestList(filterText){
+  const listEl = document.getElementById('portBySuggestList');
+  const names = getAllPortByNames();
+  const filtered = filterText
+    ? names.filter(n => n.toLowerCase().includes(filterText.toLowerCase()))
+    : names;
+  if(filtered.length === 0){
+    listEl.classList.add('hidden');
+    listEl.innerHTML = '';
+    return;
+  }
+  listEl.innerHTML = filtered.map(n=>`<button type="button" class="genre-suggest-item" data-portby="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join('');
+  listEl.classList.remove('hidden');
+  listEl.querySelectorAll('[data-portby]').forEach(btn=>{
+    btn.addEventListener('mousedown', (e)=>{
+      e.preventDefault();
+      document.getElementById('fPortBy').value = btn.dataset.portby;
+      listEl.classList.add('hidden');
+    });
+  });
+}
+document.getElementById('fPortBy').addEventListener('input', (e)=> renderPortBySuggestList(e.target.value.trim()));
+document.getElementById('fPortBy').addEventListener('focus', (e)=> renderPortBySuggestList(e.target.value.trim()));
+document.getElementById('fPortBy').addEventListener('blur', ()=>{
+  setTimeout(()=> document.getElementById('portBySuggestList').classList.add('hidden'), 150);
+});
+async function ensurePortByExists(name){
+  if(!name) return;
+  const key = name.trim().toLowerCase();
+  const exists = getAllPortByNames().some(n => n.toLowerCase() === key);
+  if(exists) return;
+  try{ await addDoc(collection(db,'ports'), { name: name.trim(), createdAt: serverTimestamp() }); }
+  catch(err){ console.error('Não foi possível salvar o port novo:', err); }
+}
+function startPortsListener(){
+  onSnapshot(collection(db,'ports'), (snap)=>{
+    portByDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }, (err)=>{ console.error('Erro ao carregar ports:', err); });
 }
 
 function startGamesListener(){
@@ -1423,6 +1552,7 @@ function openDetail(id){
         <div class="stat"><div class="num mono"><span class="msi msi-inline">sd_storage</span> ${escapeHtml(g.fileSize||'—')}</div><div class="lab">Tamanho</div></div>
         <div class="stat"><div class="num mono">${escapeHtml(formatArchitectures(g.architectures))}</div><div class="lab">Arquitetura</div></div>
       </div>
+      ${(g.devBy || g.portBy) ? `<div class="credits-row">${g.devBy ? `<span><b>Dev by:</b> ${escapeHtml(g.devBy)}</span>` : ''}${g.portBy ? `<span><b>Port by:</b> ${escapeHtml(g.portBy)}</span>` : ''}</div>` : ''}
       <div class="desc">${escapeHtml(g.description||'Sem descrição ainda.')}</div>
       <div id="downloadArea"></div>
     </div>
@@ -1701,6 +1831,8 @@ function resetForm(){
   document.getElementById('fFileSize').value = '';
   setSelectedArchitectures([]);
   document.getElementById('fGenre').value = '';
+  document.getElementById('fDevBy').value = '';
+  document.getElementById('fPortBy').value = '';
   document.getElementById('fVersion').value = '';
   document.getElementById('fDescription').value = '';
   document.getElementById('fIconUrl').value = '';
@@ -1732,6 +1864,8 @@ function openForm(gameId){
     document.getElementById('fFileSize').value = g.fileSize || '';
     setSelectedArchitectures(g.architectures || []);
     document.getElementById('fGenre').value = g.genre || '';
+    document.getElementById('fDevBy').value = g.devBy || '';
+    document.getElementById('fPortBy').value = g.portBy || '';
     document.getElementById('fVersion').value = g.version || '';
     document.getElementById('fDescription').value = g.description || '';
     document.getElementById('fIconUrl').value = g.iconUrl || '';
@@ -1757,6 +1891,8 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   const name = document.getElementById('fName').value.trim();
   const category = document.getElementById('fSection').value;
   const genre = document.getElementById('fGenre').value.trim();
+  const devBy = document.getElementById('fDevBy').value.trim();
+  const portBy = document.getElementById('fPortBy').value.trim();
   const fileSize = document.getElementById('fFileSize').value.trim();
   const version = document.getElementById('fVersion').value.trim();
   const description = document.getElementById('fDescription').value.trim();
@@ -1784,7 +1920,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   saveBtn.textContent = 'Salvando...';
 
   try{
-    const payload = { name, category, genre, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures };
+    const payload = { name, category, genre, devBy, portBy, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures };
 
     if(editingGameId){
       await updateDoc(doc(db,'games',editingGameId), payload);
@@ -1795,6 +1931,8 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
       postToTelegram(gameData);
     }
     await ensureGenreExists(genre);
+    await ensureDevByExists(devBy);
+    await ensurePortByExists(portBy);
     msg.innerHTML = `<div class="msg ok">Jogo salvo com sucesso.</div>`;
     setTimeout(()=> document.getElementById('gameFormOverlay').classList.add('hidden'), 600);
   }catch(err){
@@ -1810,6 +1948,8 @@ document.getElementById('sectionTitle').textContent = activeSection;
 renderSectionNav();
 routeCheck();
 startGenresListener();
+startDevsListener();
+startPortsListener();
 startGamesListener();
 </script>
 </body>
