@@ -40,11 +40,18 @@ Site visualmente amigável, sicronizado no Vercel, com painel administrativo pr�
 ## 📁 Estrutura de arquivos
 
 ```
-├── index.html        # o site inteiro (estrutura, estilo e lógica)
-├── manifest.json      # configuração do PWA (nome, ícones, cores)
-├── sw.js              # service worker (cache do app instalado)
-├── icon-192.png        # ícone do app (192x192)
-└── icon-512.png        # ícone do app (512x512)
+├── index.html              # o site inteiro (estrutura, estilo e lógica)
+├── manifest.json           # configuração do PWA (nome, ícones, cores)
+├── sw.js                   # service worker (cache do app instalado)
+├── _config.yml             # configuração do GitHub Pages
+├── .well-known/
+│   └── discord             # verificação de domínio do Discord
+└── assets/
+    └── images/
+        ├── logo-nwc.png    # logo usada na sidebar e no painel admin
+        ├── icon-192.png    # ícone do app (192x192)
+        ├── icon-512.png    # ícone do app (512x512)
+        └── og-image.jpg    # imagem de preview ao compartilhar o link
 ```
 
 ---
