@@ -968,10 +968,7 @@ async function postToDiscord(g){
     thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
     image: g.bannerUrl ? { url: g.bannerUrl } : undefined,
     fields: [
-      { name: 'Seção', value: g.category || '—', inline: true },
       { name: 'Gênero', value: g.genre || '—', inline: true },
-      { name: 'Dev by', value: g.devBy || '—', inline: true },
-      { name: 'Port by', value: g.portBy || '—', inline: true },
       { name: 'Versão', value: g.version || '—', inline: true },
       { name: 'Tamanho', value: g.fileSize || '—', inline: true },
       { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
@@ -1004,10 +1001,7 @@ async function postToDiscordDireto(g){
     thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
     image: g.bannerUrl ? { url: g.bannerUrl } : undefined,
     fields: [
-      { name: 'Seção', value: g.category || '—', inline: true },
       { name: 'Gênero', value: g.genre || '—', inline: true },
-      { name: 'Dev by', value: g.devBy || '—', inline: true },
-      { name: 'Port by', value: g.portBy || '—', inline: true },
       { name: 'Versão', value: g.version || '—', inline: true },
       { name: 'Tamanho', value: g.fileSize || '—', inline: true },
       { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
