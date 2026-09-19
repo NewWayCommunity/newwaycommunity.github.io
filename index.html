@@ -691,6 +691,7 @@ const ADMIN_HASH = "#BlackArch98";
 const SECTIONS = ["Jogos Android", "GoldSrc Engine", "Source Engine", "Apps Premium"];
 
 const NEW_BADGE_DAYS = 2;
+const LINK_UPDATE_BADGE_DAYS = 3;
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAnalytics, isSupported as analyticsIsSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
@@ -933,6 +934,11 @@ function isRecentlyAdded(g){
   const ms = timeValue(g.createdAt);
   if(!ms) return false;
   return (Date.now() - ms) < NEW_BADGE_DAYS*24*60*60*1000;
+}
+function isRecentlyLinkUpdated(g){
+  const ms = timeValue(g.linksUpdatedAt);
+  if(!ms) return false;
+  return (Date.now() - ms) < LINK_UPDATE_BADGE_DAYS*24*60*60*1000;
 }
 function getLinks(g){
   if(Array.isArray(g.links) && g.links.length > 0){
@@ -1457,8 +1463,12 @@ function renderCarousels(){
   }
   empty.classList.add('hidden');
 
+  const recentlyUpdatedGames = sectionGames
+    .filter(isRecentlyLinkUpdated)
+    .sort((a,b)=> timeValue(b.linksUpdatedAt) - timeValue(a.linksUpdatedAt));
+  const updatedIds = new Set(recentlyUpdatedGames.map(g=>g.id));
   const pinnedGames = sectionGames.filter(g=>g.pinned);
-  const unpinnedGames = sectionGames.filter(g=>!g.pinned);
+  const unpinnedGames = sectionGames.filter(g=>!g.pinned && !updatedIds.has(g.id));
 
   const groups = new Map();
   unpinnedGames.forEach(g=>{
@@ -1473,6 +1483,14 @@ function renderCarousels(){
   });
 
   let html = '';
+  if(recentlyUpdatedGames.length > 0){
+    html += `
+      <div class="genre-row">
+        <h2 class="genre-title"><span class="msi msi-inline" style="font-size:16px;vertical-align:-2px;">update</span> Atualizados recentemente <span class="genre-count">${recentlyUpdatedGames.length}</span></h2>
+        <div class="carousel-track">${recentlyUpdatedGames.map(cardHtml).join('')}</div>
+      </div>
+    `;
+  }
   if(pinnedGames.length > 0){
     html += `
       <div class="genre-row">
@@ -1953,7 +1971,9 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
 
     if(editingGameId){
       const existing = allGames.find(x=>x.id===editingGameId);
-      await updateDoc(doc(db,'games',editingGameId), payload);
+      const linksChanged = !!existing && JSON.stringify(existing.links||[]) !== JSON.stringify(payload.links||[]);
+      const updatePayload = linksChanged ? { ...payload, linksUpdatedAt: serverTimestamp() } : payload;
+      await updateDoc(doc(db,'games',editingGameId), updatePayload);
       const gameData = { id: editingGameId, ...payload };
       if(existing && existing.discordMessageId){
         await editDiscordMessage({ ...gameData, discordMessageId: existing.discordMessageId });
