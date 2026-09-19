@@ -957,14 +957,12 @@ function gameShareHash(g){
 function buildShareUrl(g){
   return `${window.location.origin}${window.location.pathname}${gameShareHash(g)}`;
 }
-async function postToDiscord(g){
-  const webhookUrl = await getDiscordWebhook(g.category);
-  if(!webhookUrl) return 'not_configured';
-  const embed = {
+function buildDiscordEmbed(g, opts={}){
+  return {
     title: g.name || 'Novo jogo',
-    url: buildShareUrl(g),
+    url: opts.direct ? g.directUrl : buildShareUrl(g),
     description: (g.description || '').slice(0, 300),
-    color: 0xB69CFF,
+    color: opts.direct ? 0xFF7FB8 : 0xB69CFF,
     thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
     image: g.bannerUrl ? { url: g.bannerUrl } : undefined,
     fields: [
@@ -973,15 +971,26 @@ async function postToDiscord(g){
       { name: 'Tamanho', value: g.fileSize || '—', inline: true },
       { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
     ],
-    footer: { text: 'New Way Community' },
+    footer: { text: opts.direct ? 'New Way Community • Link Direto' : 'New Way Community' },
     timestamp: new Date().toISOString()
   };
+}
+
+async function postToDiscord(g){
+  const webhookUrl = await getDiscordWebhook(g.category);
+  if(!webhookUrl) return 'not_configured';
+  const embed = buildDiscordEmbed(g);
   try{
-    await fetch(webhookUrl, {
+    const res = await fetch(`${webhookUrl}?wait=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ embeds: [embed] })
     });
+    const data = await res.json().catch(()=>null);
+    if(data && data.id && g.id){
+      try{ await updateDoc(doc(db,'games',g.id), { discordMessageId: data.id }); }
+      catch(err){ console.warn('Não foi possível salvar o ID da mensagem do Discord:', err); }
+    }
     return 'ok';
   }catch(err){
     console.error('Não foi possível avisar o Discord:', err);
@@ -993,31 +1002,57 @@ async function postToDiscordDireto(g){
   const webhookUrl = await getDiscordDiretoWebhook(g.category);
   if(!webhookUrl) return 'not_configured';
   if(!g.directUrl) return 'no_direct_url';
-  const embed = {
-    title: g.name || 'Novo jogo',
-    url: g.directUrl,
-    description: (g.description || '').slice(0, 300),
-    color: 0xFF7FB8,
-    thumbnail: g.iconUrl ? { url: g.iconUrl } : undefined,
-    image: g.bannerUrl ? { url: g.bannerUrl } : undefined,
-    fields: [
-      { name: 'Gênero', value: g.genre || '—', inline: true },
-      { name: 'Versão', value: g.version || '—', inline: true },
-      { name: 'Tamanho', value: g.fileSize || '—', inline: true },
-      { name: 'Arquitetura', value: formatArchitectures(g.architectures), inline: true }
-    ],
-    footer: { text: 'New Way Community • Link Direto' },
-    timestamp: new Date().toISOString()
-  };
+  const embed = buildDiscordEmbed(g, { direct: true });
   try{
-    await fetch(webhookUrl, {
+    const res = await fetch(`${webhookUrl}?wait=true`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    const data = await res.json().catch(()=>null);
+    if(data && data.id && g.id){
+      try{ await updateDoc(doc(db,'games',g.id), { discordDiretoMessageId: data.id }); }
+      catch(err){ console.warn('Não foi possível salvar o ID da mensagem direta do Discord:', err); }
+    }
+    return 'ok';
+  }catch(err){
+    console.error('Não foi possível avisar o Discord (link direto):', err);
+    return 'failed';
+  }
+}
+
+async function editDiscordMessage(g){
+  if(!g.discordMessageId) return 'no_message';
+  const webhookUrl = await getDiscordWebhook(g.category);
+  if(!webhookUrl) return 'not_configured';
+  const embed = buildDiscordEmbed(g);
+  try{
+    await fetch(`${webhookUrl}/messages/${g.discordMessageId}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ embeds: [embed] })
     });
     return 'ok';
   }catch(err){
-    console.error('Não foi possível avisar o Discord (link direto):', err);
+    console.error('Não foi possível editar a mensagem do Discord:', err);
+    return 'failed';
+  }
+}
+
+async function editDiscordDiretoMessage(g){
+  if(!g.discordDiretoMessageId) return 'no_message';
+  const webhookUrl = await getDiscordDiretoWebhook(g.category);
+  if(!webhookUrl) return 'not_configured';
+  const embed = buildDiscordEmbed(g, { direct: true });
+  try{
+    await fetch(`${webhookUrl}/messages/${g.discordDiretoMessageId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    return 'ok';
+  }catch(err){
+    console.error('Não foi possível editar a mensagem direta do Discord:', err);
     return 'failed';
   }
 }
@@ -1917,7 +1952,15 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
     const payload = { name, category, genre, devBy, portBy, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures };
 
     if(editingGameId){
+      const existing = allGames.find(x=>x.id===editingGameId);
       await updateDoc(doc(db,'games',editingGameId), payload);
+      const gameData = { id: editingGameId, ...payload };
+      if(existing && existing.discordMessageId){
+        await editDiscordMessage({ ...gameData, discordMessageId: existing.discordMessageId });
+      }
+      if(existing && existing.discordDiretoMessageId){
+        await editDiscordDiretoMessage({ ...gameData, discordDiretoMessageId: existing.discordDiretoMessageId });
+      }
     }else{
       const newDocRef = await addDoc(collection(db,'games'), { ...payload, pinned: false, createdAt: serverTimestamp() });
       const gameData = { id: newDocRef.id, ...payload };
