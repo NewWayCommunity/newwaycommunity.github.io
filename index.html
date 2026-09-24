@@ -404,12 +404,14 @@
   }
   .link-del-btn:hover{background:var(--md-error-container);border-color:var(--coral);}
   .hint-counter{text-align:right;}
-  .admin-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--md-outline-variant);gap:10px;flex-wrap:wrap;}
-  .admin-row:last-child{border-bottom:none;padding-bottom:0;}
+  .admin-row{display:flex;justify-content:space-between;align-items:center;padding:14px 10px;margin:0 -10px;border-bottom:1px solid var(--md-outline-variant);gap:10px;flex-wrap:wrap;border-radius:var(--shape-md);transition:background .15s ease;}
+  .admin-row:hover{background:var(--md-surface-container-high);}
+  .admin-row:last-child{border-bottom:none;padding-bottom:14px;}
   .admin-row .name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .admin-row .actions{display:flex;gap:8px;flex-wrap:wrap;}
   .admin-row.game-row{flex-direction:column;align-items:flex-start;}
   .admin-row.game-row .actions{width:100%;}
+  .cat-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--md-surface-container-high);color:var(--md-on-surface-variant);border:1px solid var(--md-outline-variant);white-space:nowrap;}
   .rank-num{
     display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
     background:var(--md-surface-container-highest);font-size:11px;font-weight:800;color:var(--md-primary);flex-shrink:0;
@@ -540,9 +542,17 @@
           <button class="btn btn-filled" id="newGameBtn"><span class="msi msi-inline" style="font-size:16px;vertical-align:-3px;">add</span> Novo jogo</button>
         </div>
       </div>
-      <div class="search-wrap" style="margin-bottom:14px;">
-        <span class="ico msi">search</span>
-        <input type="text" id="adminSearchInput" placeholder="Buscar nos seus jogos...">
+      <div class="filter-row" style="margin:0 0 14px;">
+        <div class="search-wrap">
+          <span class="ico msi">search</span>
+          <input type="text" id="adminSearchInput" placeholder="Buscar nos seus jogos...">
+        </div>
+        <div class="pill-select-wrap">
+          <select id="adminCategoryFilter">
+            <option value="all">Todos os jogos</option>
+          </select>
+          <span class="msi select-caret">expand_more</span>
+        </div>
       </div>
       <div id="adminLoadMsg" style="color:var(--md-on-surface-variant);font-size:13px;"></div>
       <div class="admin-card" id="gameListCard"></div>
@@ -561,7 +571,7 @@
 
       <div class="field-row">
         <div class="field">
-          <label>Seção (aparece na barra lateral)</label>
+          <label>Seção de jogos</label>
           <select id="fSection">
             <option value="Jogos Android">Jogos Android</option>
             <option value="GoldSrc Engine">GoldSrc Engine</option>
@@ -660,9 +670,9 @@
       </div>
 
       <div class="field">
-        <label>Link direto (Mediafire, Mega, etc.)</label>
+        <label>Link direto (Mediafire, Drive e Github)</label>
         <input type="url" id="fDirectUrl" placeholder="https://www.mediafire.com/...">
-        <div class="hint">Usado só no botão "Link Direto" do painel admin — o post vai apontar pra esse link em vez de abrir o site.</div>
+        <div class="hint">Usado para levar o destinatário ao link direto sem encurtador, conectado no webhook do Discord.</div>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:10px;">
@@ -689,6 +699,15 @@ const ADMIN_HASH = "#BlackArch98";
 
 
 const SECTIONS = ["Jogos Android", "GoldSrc Engine", "Source Engine", "Apps Premium"];
+(function populateAdminCategoryFilter(){
+  const sel = document.getElementById('adminCategoryFilter');
+  SECTIONS.forEach(sec=>{
+    const opt = document.createElement('option');
+    opt.value = sec;
+    opt.textContent = sec;
+    sel.appendChild(opt);
+  });
+})();
 
 const NEW_BADGE_DAYS = 2;
 const LINK_UPDATE_BADGE_DAYS = 3;
@@ -767,6 +786,7 @@ let editingGameId = null;
 let visibleLinkRows = 1;
 let gamesLoaded = false;
 let adminSearchTerm = "";
+let adminCategoryFilter = "all";
 
 const sectionIcon = { "Jogos Android":"smartphone", "GoldSrc Engine":"terminal", "Source Engine":"engineering", "Apps Premium":"apps" };
 const sectionIconSvg = {
@@ -1722,14 +1742,21 @@ function renderAdminList(){
     return;
   }
   const term = adminSearchTerm.trim().toLowerCase();
-  const list = sortGames(allGames).filter(g => !term || (g.name||'').toLowerCase().includes(term));
+  const list = sortGames(allGames)
+    .filter(g => adminCategoryFilter === 'all' || g.category === adminCategoryFilter)
+    .filter(g => !term || (g.name||'').toLowerCase().includes(term));
   if(list.length === 0){
-    card.innerHTML = `<div class="empty-note">Nenhum jogo encontrado pra "${escapeHtml(adminSearchTerm)}".</div>`;
+    const filterLabel = adminCategoryFilter === 'all' ? '' : ` em ${escapeHtml(adminCategoryFilter)}`;
+    card.innerHTML = term
+      ? `<div class="empty-note">Nenhum jogo encontrado pra "${escapeHtml(adminSearchTerm)}"${filterLabel}.</div>`
+      : `<div class="empty-note">Nenhum jogo${filterLabel} ainda.</div>`;
     return;
   }
   card.innerHTML = list.map(g=>`
     <div class="admin-row game-row">
-      <div class="name">${g.pinned?'<span class="msi msi-inline">push_pin</span>':''} ${escapeHtml(g.name)} <span class="mono" style="color:var(--md-on-surface-variant);font-weight:400;">v${escapeHtml(g.version||'1.0')}</span></div>
+      <div class="name">${g.pinned?'<span class="msi msi-inline">push_pin</span>':''} ${escapeHtml(g.name)} <span class="mono" style="color:var(--md-on-surface-variant);font-weight:400;">v${escapeHtml(g.version||'1.0')}</span>
+        <span class="cat-tag">${escapeHtml(g.category||'—')}</span>
+      </div>
       <div class="actions">
         <button class="btn btn-tonal icon-btn-sm${g.pinned?' active':''}" data-pin="${g.id}" data-pinned="${g.pinned?1:0}" title="${g.pinned ? 'Desafixar' : 'Fixar'}" aria-label="${g.pinned ? 'Desafixar' : 'Fixar'}"><span class="msi">push_pin</span></button>
         <button class="btn btn-tonal icon-btn-sm" data-resend="${g.id}" title="Reenviar" aria-label="Reenviar"><span class="msi">campaign</span></button>
@@ -1793,6 +1820,10 @@ function renderAdminList(){
 document.getElementById('newGameBtn').onclick = ()=> openForm(null);
 document.getElementById('adminSearchInput').addEventListener('input', (e)=>{
   adminSearchTerm = e.target.value;
+  renderAdminList();
+});
+document.getElementById('adminCategoryFilter').addEventListener('change', (e)=>{
+  adminCategoryFilter = e.target.value;
   renderAdminList();
 });
 document.getElementById('cancelFormBtn').onclick = ()=>{ document.getElementById('gameFormOverlay').classList.add('hidden'); };
