@@ -13,3 +13,7 @@
 @starting-style{.link-preview.show{opacity:0}}
 .content{zoom:.85}
 @media (width<=760px){.content{zoom:.9}}
+@keyframes overlayFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes panelPopIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.overlay{animation:overlayFadeIn .18s ease}
+.overlay>*{animation:panelPopIn .22s cubic-bezier(.2,.8,.3,1)}
