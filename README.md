@@ -3,7 +3,7 @@
 Um Hub de jogos Android e Apps Premium, organizados por categoria e gênero, com atualizações publicadas frequentes.
 https://newwaycommunity.vercel.app/
 
-Site visualmente amigável, sicronizado no Vercel, com painel administrativo próprio e dados em tempo real via Firebase.
+Site com tema roxo escuro e fundo espacial animado, sincronizado no Vercel, com painel administrativo próprio e dados em tempo real via Firebase.
 
 ---
 
@@ -16,8 +16,10 @@ Site visualmente amigável, sicronizado no Vercel, com painel administrativo pr�
 - Favoritos salvos localmente no navegador (sem precisar de conta)
 - Até 4 links de download por jogo, com botão "Mostrar mais links" quando há mais de um
 - Botão de **compartilhar** — gera um link direto da publicação para aquele jogo específico
+- Selo "Novo" automático em postagens recentes (removido após 2 dias)
 - Instalável como app (PWA)
-- Selo "Novo" automático em postagens recentes (Removido após 2 dias)
+- Visual com fundo espacial animado (estrelas e planetas) e transições suaves ao abrir/fechar postagens, telas e menus
+- Preview de link com imagem ao compartilhar o site (Open Graph e Twitter Card)
 
 ### Para o admin
 - Publicar, editar, fixar e excluir jogos
@@ -29,10 +31,11 @@ Site visualmente amigável, sicronizado no Vercel, com painel administrativo pr�
 
 ## 🛠️ Tecnologias
 
-- **HTML, CSS e JavaScript puro** (sem framework, sem build step)
+- **React + Tailwind CSS** — interface pré-compilada (arquivos em `assets/`)
+- **JavaScript puro** — toda a lógica do catálogo, admin, favoritos e integrações fica em `features/catalog/logic.js`
 - **Firebase Authentication** — login do admin
 - **Cloud Firestore** — banco de dados em tempo real (jogos, gêneros, relatos, configurações)
-- **GitHub e Vercel** — hospedagem estática
+- **GitHub e Vercel** — hospedagem estática (o Vercel publica a cada atualização do repositório)
 - **PWA** — manifest + service worker, instalável em Android
 
 ---
@@ -40,18 +43,26 @@ Site visualmente amigável, sicronizado no Vercel, com painel administrativo pr�
 ## 📁 Estrutura de arquivos
 
 ```
-├── index.html              # o site inteiro (estrutura, estilo e lógica)
-├── manifest.json           # configuração do PWA (nome, ícones, cores)
-├── sw.js                   # service worker (cache do app instalado)
-├── _config.yml             # configuração do GitHub Pages
+├── index.html                  # página principal (estrutura, meta tags de SEO e fundo espacial)
+├── manifest.json               # configuração do PWA (nome, ícones, cores)
+├── sw.js                       # service worker (cache do app instalado)
+├── robots.txt                  # regras para robôs de busca
+├── favicon.png                 # ícone da aba do navegador
+├── .nojekyll                   # impede o GitHub Pages de processar os arquivos com Jekyll
 ├── .well-known/
-│   └── discord             # verificação de domínio do Discord
+│   └── discord                 # verificação de domínio do Discord
+├── features/
+│   └── catalog/
+│       └── logic.js            # lógica do site: catálogo, painel admin, Firebase, Discord e Telegram
 └── assets/
+    ├── index-X-c5PTSk.js       # bundle principal (React) — arquivo compilado
+    ├── routes-BrLij3Fe.js      # estrutura da página (HTML da interface) — arquivo compilado
+    ├── styles-Bwrbb2UA.css     # estilos (tema, animações e transições) — arquivo compilado
     └── images/
-        ├── logo-nwc.png    # logo usada na sidebar e no painel admin
-        ├── icon-192.png    # ícone do app (192x192)
-        ├── icon-512.png    # ícone do app (512x512)
-        └── og-image.jpg    # imagem de preview ao compartilhar o link
+        ├── logo-nwc.png        # logo usada na sidebar e no painel admin
+        ├── icon-192.png        # ícone do app (192x192)
+        ├── icon-512.png        # ícone do app (512x512)
+        └── og-image.jpg        # imagem de preview ao compartilhar o link
 ```
 
 ---
