@@ -11,3 +11,5 @@
 .link-preview{transition:opacity .18s ease,display .18s allow-discrete;opacity:0}
 .link-preview.show{opacity:1}
 @starting-style{.link-preview.show{opacity:0}}
+.content{zoom:.85}
+@media (width<=760px){.content{zoom:.9}}
