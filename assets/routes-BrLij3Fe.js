@@ -9,14 +9,14 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
       <div class="logo"><img src="__BRAND_LOGO__" alt="NWC" > New Way<br>Community</div>
       <div class="nav-label">Categorias</div>
       <div id="sectionNav"></div>
+      <div class="sidebar-banner">
+        <a href="https://monetiza.link/ref/107939243575193274106" target="_blank" rel="nofollow noopener sponsored" aria-label="MonetizaLink">
+          <img src="https://i.ibb.co/rdB3YRV/monetizalink336x280.png" alt="MonetizaLink" loading="lazy">
+        </a>
+      </div>
       <button class="btn btn-tonal install-btn hidden" id="installBtn">
         <span class="msi msi-inline" style="font-size:16px;vertical-align:-3px;">install_mobile</span> Instalar app
       </button>
-      <div class="sidebar-banner">
-        <a href="https://monetiza.link/ref/107939243575193274106" target="_blank" rel="nofollow noopener sponsored" aria-label="MonetizaLink">
-          <img src="__AD_BANNER__" alt="MonetizaLink" loading="lazy">
-        </a>
-      </div>
     </aside>
 
     <main class="content">
