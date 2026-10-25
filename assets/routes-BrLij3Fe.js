@@ -85,6 +85,7 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
         <h2 style="font-family:var(--font-display);font-size:19px;margin:0;">Meus jogos</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-tonal" id="logoutBtn">Sair</button>
+          <button class="btn btn-outlined" id="viewArchivedLinksBtn"><span class="msi msi-inline" style="font-size:16px;vertical-align:-3px;">inventory_2</span> Links guardados</button>
           <button class="btn btn-filled" id="newGameBtn"><span class="msi msi-inline" style="font-size:16px;vertical-align:-3px;">add</span> Novo jogo</button>
         </div>
       </div>
@@ -194,22 +195,30 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
         <div class="link-row" id="linkRowWrap1">
           <input type="text" id="fLinkName1" class="link-name" placeholder="Nome (opcional)">
           <input type="url" id="fLinkUrl1" class="link-url" placeholder="https://... (Link 1 — principal)">
+          <button type="button" class="link-archive-btn" id="linkArchiveBtn1" data-row="1" title="Guardar link antigo (não aparece pro público)" aria-label="Guardar link antigo"><span class="msi">archive</span></button>
         </div>
+        <div class="link-archived-note" id="linkArchivedNote1"></div>
         <div class="link-row hidden" id="linkRowWrap2">
           <input type="text" id="fLinkName2" class="link-name" placeholder="Nome (opcional)">
           <input type="url" id="fLinkUrl2" class="link-url" placeholder="https://... (Link 2)">
+          <button type="button" class="link-archive-btn" id="linkArchiveBtn2" data-row="2" title="Guardar link antigo (não aparece pro público)" aria-label="Guardar link antigo"><span class="msi">archive</span></button>
           <button type="button" class="link-del-btn hidden" id="linkDelBtn2" data-row="2" title="Remover link"><span class="msi">delete</span></button>
         </div>
+        <div class="link-archived-note" id="linkArchivedNote2"></div>
         <div class="link-row hidden" id="linkRowWrap3">
           <input type="text" id="fLinkName3" class="link-name" placeholder="Nome (opcional)">
           <input type="url" id="fLinkUrl3" class="link-url" placeholder="https://... (Link 3)">
+          <button type="button" class="link-archive-btn" id="linkArchiveBtn3" data-row="3" title="Guardar link antigo (não aparece pro público)" aria-label="Guardar link antigo"><span class="msi">archive</span></button>
           <button type="button" class="link-del-btn hidden" id="linkDelBtn3" data-row="3" title="Remover link"><span class="msi">delete</span></button>
         </div>
+        <div class="link-archived-note" id="linkArchivedNote3"></div>
         <div class="link-row hidden" id="linkRowWrap4">
           <input type="text" id="fLinkName4" class="link-name" placeholder="Nome (opcional)">
           <input type="url" id="fLinkUrl4" class="link-url" placeholder="https://... (Link 4)">
+          <button type="button" class="link-archive-btn" id="linkArchiveBtn4" data-row="4" title="Guardar link antigo (não aparece pro público)" aria-label="Guardar link antigo"><span class="msi">archive</span></button>
           <button type="button" class="link-del-btn hidden" id="linkDelBtn4" data-row="4" title="Remover link"><span class="msi">delete</span></button>
         </div>
+        <div class="link-archived-note" id="linkArchivedNote4"></div>
         <button type="button" class="btn btn-tonal btn-sm" id="addLinkBtn" style="margin-top:4px;">
           <span class="msi msi-inline" style="font-size:16px;vertical-align:-3px;">add</span> Adicionar link
         </button>
@@ -229,5 +238,16 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
     </div>
   </div>
 </div>
+
+  <div class="overlay hidden" id="archivedLinksOverlay">
+    <div id="archivedLinksBox" role="dialog" aria-modal="true" aria-label="Links guardados" class="admin-card" style="max-width:640px;width:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h2 style="font-family:var(--font-display);font-size:19px;margin:0;">Links guardados</h2>
+        <button type="button" class="btn btn-tonal icon-btn-sm" id="closeArchivedLinksBtn" title="Fechar" aria-label="Fechar"><span class="msi">close</span></button>
+      </div>
+      <div class="hint" style="margin-top:0;margin-bottom:14px;">Esses links não aparecem pro público — só você vê aqui.</div>
+      <div id="archivedLinksList"></div>
+    </div>
+  </div>
 
 `,a={version:1,asset_id:`638678be-5e29-4363-9cfb-611663b35efa`,project_id:`d9a8dc9d-8f43-461f-8847-94bdcdb0d0f0`,url:`assets/images/logo-nwc.png`,r2_key:`a/v1/d9a8dc9d-8f43-461f-8847-94bdcdb0d0f0/638678be-5e29-4363-9cfb-611663b35efa/logo-nwc.png`,original_filename:`logo-nwc.png`,size:34904,content_type:`image/png`,created_at:`2026-09-26T00:16:42Z`},o={version:1,asset_id:`975d5c8f-048d-4321-ba77-86c7884730a5`,project_id:`d9a8dc9d-8f43-461f-8847-94bdcdb0d0f0`,url:`assets/images/monetizalink160x600.png`,r2_key:`a/v1/d9a8dc9d-8f43-461f-8847-94bdcdb0d0f0/975d5c8f-048d-4321-ba77-86c7884730a5/monetizalink160x600.png`,original_filename:`monetizalink160x600.png`,size:19255,content_type:`image/png`,created_at:`2026-09-26T00:16:59Z`},s=n(),c=i.replaceAll(`__BRAND_LOGO__`,a.url).replaceAll(`__AD_BANNER__`,o.url);function l(){return(0,r.useEffect)(()=>{if(document.getElementById(`catalog-behavior`))return;let e=document.createElement(`script`);e.id=`catalog-behavior`,e.type=`module`,e.src=`/features/catalog/logic.js`,document.body.appendChild(e)},[]),(0,s.jsx)(`div`,{className:`catalog-experience`,dangerouslySetInnerHTML:{__html:c}})}var u=l;export{u as component};
