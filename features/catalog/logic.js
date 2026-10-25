@@ -98,6 +98,7 @@ let activeSection = SECTIONS[0];
 let sortMode = "recent";
 let editingGameId = null;
 let visibleLinkRows = 1;
+let editingArchivedLinks = [];
 let gamesLoaded = false;
 let adminSearchTerm = "";
 let adminCategoryFilter = "all";
@@ -136,7 +137,7 @@ function openDrawer(){ sidebar.classList.add('open'); backdrop.classList.add('op
 function closeDrawer(){ sidebar.classList.remove('open'); backdrop.classList.remove('open'); document.getElementById('menuBtn').setAttribute('aria-expanded','false'); }
 document.getElementById('menuBtn').onclick = openDrawer;
 backdrop.onclick = closeDrawer;
-document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeDrawer(); if(!document.getElementById('detailOverlay').classList.contains('hidden')) closeDetail(); document.getElementById('gameFormOverlay').classList.add('hidden'); } });
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeDrawer(); if(!document.getElementById('detailOverlay').classList.contains('hidden')) closeDetail(); document.getElementById('gameFormOverlay').classList.add('hidden'); document.getElementById('archivedLinksOverlay').classList.add('hidden'); } });
 
 function escapeHtml(str){
   const d = document.createElement('div');
@@ -1101,8 +1102,65 @@ function formatArchitectures(archs){
   return archs.map(a => a.replace(/\s*bits?/i,'').trim()).join('/') + ' bits';
 }
 
+function updateArchivedNotes(){
+  for(let i=1;i<=4;i++){
+    const note = document.getElementById('linkArchivedNote'+i);
+    const count = editingArchivedLinks.filter(l => l.row === i).length;
+    if(count > 0){
+      note.textContent = count === 1 ? '1 link antigo guardado aqui (visível só pra você em "Links guardados").' : `${count} links antigos guardados aqui (visível só pra você em "Links guardados").`;
+      note.classList.add('show');
+    }else{
+      note.textContent = '';
+      note.classList.remove('show');
+    }
+  }
+}
+document.querySelectorAll('.link-archive-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const row = parseInt(btn.dataset.row, 10);
+    const nameInput = document.getElementById('fLinkName'+row);
+    const urlInput = document.getElementById('fLinkUrl'+row);
+    const url = urlInput.value.trim();
+    if(!url){
+      alert('Não tem nenhum link nesse campo pra guardar.');
+      return;
+    }
+    editingArchivedLinks.push({ row, name: nameInput.value.trim(), url, archivedAt: new Date().toISOString() });
+    nameInput.value = '';
+    urlInput.value = '';
+    updateArchivedNotes();
+  });
+});
+
+function openArchivedLinksOverlay(){
+  const list = document.getElementById('archivedLinksList');
+  const gamesWithArchived = allGames.filter(g => Array.isArray(g.archivedLinks) && g.archivedLinks.length > 0);
+  if(gamesWithArchived.length === 0){
+    list.innerHTML = `<div class="empty-note">Nenhum link guardado ainda.</div>`;
+  }else{
+    list.innerHTML = sortGames(gamesWithArchived).map(g => `
+      <div class="archived-game-group">
+        <div class="name" style="margin-bottom:8px;">${escapeHtml(g.name)}</div>
+        ${g.archivedLinks.slice().sort((a,b)=>(a.row||0)-(b.row||0)).map(l => `
+          <div class="archived-link-item">
+            <div style="color:var(--md-on-surface-variant);font-size:11px;margin-bottom:2px;">Link ${l.row||'?'}${l.name ? ' • '+escapeHtml(l.name) : ''}</div>
+            <div>${escapeHtml(l.url)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+  document.getElementById('archivedLinksOverlay').classList.remove('hidden');
+}
+document.getElementById('viewArchivedLinksBtn').onclick = openArchivedLinksOverlay;
+document.getElementById('closeArchivedLinksBtn').onclick = ()=> document.getElementById('archivedLinksOverlay').classList.add('hidden');
+document.getElementById('archivedLinksOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'archivedLinksOverlay') document.getElementById('archivedLinksOverlay').classList.add('hidden');
+});
+
 function resetForm(){
   editingGameId = null;
+  editingArchivedLinks = [];
   document.getElementById('fName').value = '';
   document.getElementById('fSection').value = SECTIONS[0];
   document.getElementById('fFileSize').value = '';
@@ -1125,6 +1183,7 @@ function resetForm(){
   updateLinkPreview('fIconUrl','iconPreview');
   updateLinkPreview('fBannerUrl','bannerPreview');
   updateCharCounters();
+  updateArchivedNotes();
 }
 
 function openForm(gameId){
@@ -1148,6 +1207,8 @@ function openForm(gameId){
     document.getElementById('fIconUrl').value = g.iconUrl || '';
     document.getElementById('fBannerUrl').value = g.bannerUrl || '';
     document.getElementById('fDirectUrl').value = g.directUrl || '';
+    editingArchivedLinks = Array.isArray(g.archivedLinks) ? [...g.archivedLinks] : [];
+    updateArchivedNotes();
     const links = getLinks(g);
     visibleLinkRows = Math.max(1, Math.min(4, links.length));
     for(let i=1;i<=4;i++){
@@ -1197,7 +1258,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   saveBtn.textContent = 'Salvando...';
 
   try{
-    const payload = { name, category, genre, devBy, portBy, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures };
+    const payload = { name, category, genre, devBy, portBy, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures, archivedLinks: editingArchivedLinks };
 
     if(editingGameId){
       const existing = allGames.find(x=>x.id===editingGameId);
