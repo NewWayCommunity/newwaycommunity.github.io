@@ -1145,12 +1145,34 @@ function openArchivedLinksOverlay(){
           <div class="archived-link-item">
             <div style="color:var(--md-on-surface-variant);font-size:11px;margin-bottom:2px;">Link ${l.row||'?'}${l.name ? ' • '+escapeHtml(l.name) : ''}</div>
             <div>${escapeHtml(l.url)}</div>
+            <button type="button" class="btn btn-tonal btn-sm" style="margin-top:8px;" data-restore-game="${g.id}" data-restore-idx="${g.archivedLinks.indexOf(l)}">Retornar link</button>
           </div>
         `).join('')}
       </div>
     `).join('');
+    list.querySelectorAll('[data-restore-game]').forEach(btn=>{
+      btn.onclick = ()=> restoreArchivedLink(btn.dataset.restoreGame, parseInt(btn.dataset.restoreIdx, 10));
+    });
   }
   document.getElementById('archivedLinksOverlay').classList.remove('hidden');
+}
+
+function restoreArchivedLink(gameId, idx){
+  const g = allGames.find(x=>x.id===gameId);
+  if(!g || !Array.isArray(g.archivedLinks) || !g.archivedLinks[idx]) return;
+  const entry = g.archivedLinks[idx];
+
+  document.getElementById('archivedLinksOverlay').classList.add('hidden');
+  if(editingGameId !== gameId) openForm(gameId);
+
+  const row = Math.min(4, Math.max(1, entry.row || 1));
+  visibleLinkRows = Math.max(visibleLinkRows, row);
+  updateLinkRowsUI();
+  document.getElementById('fLinkName'+row).value = entry.name || '';
+  document.getElementById('fLinkUrl'+row).value = entry.url || '';
+
+  editingArchivedLinks = editingArchivedLinks.filter(l => !(l.row === entry.row && l.url === entry.url && l.archivedAt === entry.archivedAt));
+  updateArchivedNotes();
 }
 document.getElementById('viewArchivedLinksBtn').onclick = openArchivedLinksOverlay;
 document.getElementById('closeArchivedLinksBtn').onclick = ()=> document.getElementById('archivedLinksOverlay').classList.add('hidden');
