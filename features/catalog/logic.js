@@ -644,7 +644,6 @@ function cardHtml(g){
       <div class="icon">${g.iconUrl ? `<img src="${g.iconUrl}" alt="">` : '<span class="msi">videogame_asset</span>'}</div>
       <div class="tag-row">
         <span class="tag">${escapeHtml(g.genre || g.category || 'Jogo')}</span>
-        ${g.portStatus === 'official' ? '<span class="tag tag-official">Official Port</span>' : g.portStatus === 'unofficial' ? '<span class="tag tag-unofficial">Unofficial Port</span>' : ''}
         ${isRecentlyAdded(g)?'<span class="tag tag-new">Novo</span>':''}
       </div>
       <h3>${escapeHtml(g.name||'Sem nome')}</h3>
