@@ -644,6 +644,7 @@ function cardHtml(g){
       <div class="icon">${g.iconUrl ? `<img src="${g.iconUrl}" alt="">` : '<span class="msi">videogame_asset</span>'}</div>
       <div class="tag-row">
         <span class="tag">${escapeHtml(g.genre || g.category || 'Jogo')}</span>
+        ${g.portStatus === 'official' ? '<span class="tag tag-official">Official Port</span>' : g.portStatus === 'unofficial' ? '<span class="tag tag-unofficial">Unofficial Port</span>' : ''}
         ${isRecentlyAdded(g)?'<span class="tag tag-new">Novo</span>':''}
       </div>
       <h3>${escapeHtml(g.name||'Sem nome')}</h3>
@@ -811,7 +812,7 @@ function openDetail(id){
         <div class="icon">${g.iconUrl ? `<img src="${g.iconUrl}" alt="">` : '<span class="msi">videogame_asset</span>'}</div>
         <div>
           <h2>${escapeHtml(g.name)}</h2>
-          <div class="tag-row"><span class="tag">${escapeHtml(g.genre || g.category || 'Jogo')}</span>${isRecentlyAdded(g)?'<span class="tag tag-new">Novo</span>':''}</div>
+          <div class="tag-row"><span class="tag">${escapeHtml(g.genre || g.category || 'Jogo')}</span>${g.portStatus === 'official' ? '<span class="tag tag-official">Official Port</span>' : g.portStatus === 'unofficial' ? '<span class="tag tag-unofficial">Unofficial Port</span>' : ''}${isRecentlyAdded(g)?'<span class="tag tag-new">Novo</span>':''}</div>
         </div>
       </div>
       <div class="stat-grid">
@@ -1186,6 +1187,42 @@ document.getElementById('archivedLinksOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'archivedLinksOverlay') document.getElementById('archivedLinksOverlay').classList.add('hidden');
 });
 
+async function restoreAllGamesArchivedLinks(){
+  const gamesWithArchived = allGames.filter(g => Array.isArray(g.archivedLinks) && g.archivedLinks.length > 0);
+  if(gamesWithArchived.length === 0) return;
+  const total = gamesWithArchived.reduce((n,g)=>n+g.archivedLinks.length, 0);
+  const ok = confirm(`Isso vai devolver ${total} link(s) guardado(s) de ${gamesWithArchived.length} jogo(s) de uma vez, direto no banco — sem precisar abrir e salvar cada jogo. Quer continuar?`);
+  if(!ok) return;
+
+  const btn = document.getElementById('restoreAllGamesBtn');
+  btn.disabled = true;
+  btn.textContent = 'Restaurando...';
+
+  try{
+    await Promise.all(gamesWithArchived.map(g=>{
+      const newLinks = (g.links||[]).map(l=>({ name: l.name||'', url: l.url||'' }));
+      const entries = g.archivedLinks.slice().sort((a,b)=> new Date(a.archivedAt||0) - new Date(b.archivedAt||0));
+      entries.forEach(entry=>{
+        const row = Math.min(4, Math.max(1, entry.row || 1));
+        while(newLinks.length < row) newLinks.push({ name:'', url:'' });
+        newLinks[row-1] = { name: entry.name||'', url: entry.url||'' };
+      });
+      return updateDoc(doc(db,'games',g.id), { links: newLinks, archivedLinks: [] });
+    }));
+    document.getElementById('archivedLinksOverlay').classList.add('hidden');
+    if(editingGameId && gamesWithArchived.some(g=>g.id===editingGameId)){
+      resetForm();
+      document.getElementById('gameFormOverlay').classList.add('hidden');
+    }
+  }catch(err){
+    alert('Deu erro ao restaurar: ' + (err && err.message ? err.message : err));
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Retornar todos os links (todos os jogos)';
+  }
+}
+document.getElementById('restoreAllGamesBtn').onclick = restoreAllGamesArchivedLinks;
+
 function restoreAllArchivedLinks(gameId){
   const g = allGames.find(x=>x.id===gameId);
   if(!g || !Array.isArray(g.archivedLinks) || g.archivedLinks.length===0) return;
@@ -1219,6 +1256,7 @@ function resetForm(){
   document.getElementById('fDevBy').value = '';
   document.getElementById('fPortBy').value = '';
   document.getElementById('fVersion').value = '';
+  document.getElementById('fPortStatus').value = '';
   document.getElementById('fDescription').value = '';
   document.getElementById('fIconUrl').value = '';
   document.getElementById('fBannerUrl').value = '';
@@ -1252,6 +1290,7 @@ function openForm(gameId){
     document.getElementById('fGenre').value = g.genre || '';
     document.getElementById('fDevBy').value = g.devBy || '';
     document.getElementById('fPortBy').value = g.portBy || '';
+    document.getElementById('fPortStatus').value = g.portStatus || '';
     document.getElementById('fVersion').value = g.version || '';
     document.getElementById('fDescription').value = g.description || '';
     document.getElementById('fIconUrl').value = g.iconUrl || '';
@@ -1281,6 +1320,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   const genre = document.getElementById('fGenre').value.trim();
   const devBy = document.getElementById('fDevBy').value.trim();
   const portBy = document.getElementById('fPortBy').value.trim();
+  const portStatus = document.getElementById('fPortStatus').value;
   const fileSize = document.getElementById('fFileSize').value.trim();
   const version = document.getElementById('fVersion').value.trim();
   const description = document.getElementById('fDescription').value.trim();
@@ -1308,7 +1348,7 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
   saveBtn.textContent = 'Salvando...';
 
   try{
-    const payload = { name, category, genre, devBy, portBy, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures, archivedLinks: editingArchivedLinks };
+    const payload = { name, category, genre, devBy, portBy, portStatus, version, description, iconUrl, bannerUrl, directUrl, fileSize, links, architectures, archivedLinks: editingArchivedLinks };
 
     if(editingGameId){
       const existing = allGames.find(x=>x.id===editingGameId);
