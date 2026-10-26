@@ -1140,7 +1140,10 @@ function openArchivedLinksOverlay(){
   }else{
     list.innerHTML = sortGames(gamesWithArchived).map(g => `
       <div class="archived-game-group">
-        <div class="name" style="margin-bottom:8px;">${escapeHtml(g.name)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div class="name">${escapeHtml(g.name)}</div>
+          ${g.archivedLinks.length > 1 ? `<button type="button" class="btn btn-tonal btn-sm" data-restore-all-game="${g.id}">Retornar todos</button>` : ''}
+        </div>
         ${g.archivedLinks.slice().sort((a,b)=>(a.row||0)-(b.row||0)).map(l => `
           <div class="archived-link-item">
             <div style="color:var(--md-on-surface-variant);font-size:11px;margin-bottom:2px;">Link ${l.row||'?'}${l.name ? ' • '+escapeHtml(l.name) : ''}</div>
@@ -1152,6 +1155,9 @@ function openArchivedLinksOverlay(){
     `).join('');
     list.querySelectorAll('[data-restore-game]').forEach(btn=>{
       btn.onclick = ()=> restoreArchivedLink(btn.dataset.restoreGame, parseInt(btn.dataset.restoreIdx, 10));
+    });
+    list.querySelectorAll('[data-restore-all-game]').forEach(btn=>{
+      btn.onclick = ()=> restoreAllArchivedLinks(btn.dataset.restoreAllGame);
     });
   }
   document.getElementById('archivedLinksOverlay').classList.remove('hidden');
@@ -1179,6 +1185,28 @@ document.getElementById('closeArchivedLinksBtn').onclick = ()=> document.getElem
 document.getElementById('archivedLinksOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'archivedLinksOverlay') document.getElementById('archivedLinksOverlay').classList.add('hidden');
 });
+
+function restoreAllArchivedLinks(gameId){
+  const g = allGames.find(x=>x.id===gameId);
+  if(!g || !Array.isArray(g.archivedLinks) || g.archivedLinks.length===0) return;
+
+  document.getElementById('archivedLinksOverlay').classList.add('hidden');
+  if(editingGameId !== gameId) openForm(gameId);
+
+  const entries = g.archivedLinks.slice().sort((a,b)=> new Date(a.archivedAt||0) - new Date(b.archivedAt||0));
+  let maxRow = visibleLinkRows;
+  entries.forEach(entry=>{ maxRow = Math.max(maxRow, Math.min(4, Math.max(1, entry.row || 1))); });
+  visibleLinkRows = maxRow;
+  updateLinkRowsUI();
+  entries.forEach(entry=>{
+    const row = Math.min(4, Math.max(1, entry.row || 1));
+    document.getElementById('fLinkName'+row).value = entry.name || '';
+    document.getElementById('fLinkUrl'+row).value = entry.url || '';
+  });
+
+  editingArchivedLinks = [];
+  updateArchivedNotes();
+}
 
 function resetForm(){
   editingGameId = null;
