@@ -26,3 +26,5 @@
 .archived-game-group:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
 .archived-link-item{background:var(--md-surface-container-low);border:1px solid var(--md-outline-variant);border-radius:var(--shape-sm);padding:10px 12px;margin-bottom:8px;font-size:13px;word-break:break-all}
 .archived-link-item:last-child{margin-bottom:0}
+.tag-official{background:var(--md-surface-container-high);color:var(--md-primary);border:1px solid var(--md-primary)}
+.tag-unofficial{background:var(--md-surface-container-high);color:var(--coral);border:1px solid var(--coral)}

@@ -169,6 +169,15 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
         </div>
       </div>
 
+      <div class="field">
+        <label>Tipo de port</label>
+        <select id="fPortStatus">
+          <option value="">— Não informar —</option>
+          <option value="official">Official Port</option>
+          <option value="unofficial">Unofficial Port</option>
+        </select>
+        <div class="hint">Aparece como selo na postagem, pro visitante saber se é um port oficial ou não.</div>
+      </div>
       <div class="field"><label>Versão</label><input type="text" id="fVersion" placeholder="1.0.0"></div>
       <div class="field">
         <label>Descrição</label>
@@ -246,6 +255,7 @@ import{n as e,r as t,t as n}from"./index-X-c5PTSk.js";var r=t(e(),1),i=`
         <button type="button" class="btn btn-tonal icon-btn-sm" id="closeArchivedLinksBtn" title="Fechar" aria-label="Fechar"><span class="msi">close</span></button>
       </div>
       <div class="hint" style="margin-top:0;margin-bottom:14px;">Esses links não aparecem pro público — só você vê aqui.</div>
+      <button type="button" class="btn btn-tonal" id="restoreAllGamesBtn" style="width:100%;margin-bottom:14px;">Retornar todos os links (todos os jogos)</button>
       <div id="archivedLinksList"></div>
     </div>
   </div>
