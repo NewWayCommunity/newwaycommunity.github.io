@@ -1,0 +1,100 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Administrador = quem tem um token criado pelo backend (/api/admin-unlock), com a sessão ainda
+    // válida no servidor. Conhecer a palavra-chave, o hash ou ter só e-mail e senha não basta.
+    function sessionPath() {
+      return /databases/$(database)/documents/adminSessions/$(request.auth.token.sid);
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true
+        && request.auth.token.sid is string
+        && request.auth.token.adminUntil is number
+        && request.auth.token.adminUntil > request.time.toMillis()
+        && exists(sessionPath())
+        && get(sessionPath()).data.uid == request.auth.uid
+        && get(sessionPath()).data.expiresAt > request.time;
+    }
+
+    function optStr(d, k, max) {
+      return !(k in d) || d[k] == null || (d[k] is string && d[k].size() <= max);
+    }
+
+    function validGame(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && optStr(d, 'category', 80)
+        && optStr(d, 'genre', 120)
+        && optStr(d, 'devBy', 160)
+        && optStr(d, 'portBy', 160)
+        && optStr(d, 'portStatus', 40)
+        && optStr(d, 'version', 60)
+        && optStr(d, 'fileSize', 60)
+        && optStr(d, 'description', 1200)
+        && optStr(d, 'iconUrl', 1500)
+        && optStr(d, 'bannerUrl', 1500)
+        && optStr(d, 'directUrl', 1500)
+        && optStr(d, 'discordMessageId', 80)
+        && optStr(d, 'discordDiretoMessageId', 80)
+        && (!('architectures' in d) || (d.architectures is list && d.architectures.size() <= 4))
+        && (!('links' in d) || (d.links is list && d.links.size() <= 8))
+        && (!('archivedLinks' in d) || (d.archivedLinks is list && d.archivedLinks.size() <= 200))
+        && (!('pinned' in d) || d.pinned is bool);
+    }
+
+    function validName(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 160;
+    }
+
+    // Jogos: qualquer visitante lê, só o admin cria, edita e apaga.
+    match /games/{gameId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validGame(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Listas de sugestão do formulário (gêneros, desenvolvedores, portadores).
+    match /genres/{itemId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validName(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /devs/{itemId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validName(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /ports/{itemId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validName(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Webhooks do Discord e token do Telegram (config/discord, config/discordDireto, config/telegram):
+    // só quem tem sessão administrativa lê, e ninguém grava pelo site (edite pelo console do Firebase).
+    // O documento antigo config/admin (hash da palavra-chave) não é mais usado e fica fechado.
+    match /config/{docId} {
+      allow read: if isAdmin() && docId != 'admin';
+      allow write: if false;
+    }
+
+    // Documentos privados do login administrativo: só o backend (Admin SDK) acessa.
+    match /adminConfig/{docId} {
+      allow read, write: if false;
+    }
+    match /adminSessions/{docId} {
+      allow read, write: if false;
+    }
+    match /adminGates/{docId} {
+      allow read, write: if false;
+    }
+    match /adminAuthLimits/{docId} {
+      allow read, write: if false;
+    }
+
+    // Todo o resto fica fechado.
+  }
+}

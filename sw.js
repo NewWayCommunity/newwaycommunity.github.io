@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nwc-shell-v4';
+const CACHE_NAME = 'nwc-shell-v5';
 const SHELL_URL = '/';
 
 self.addEventListener('install', event => {

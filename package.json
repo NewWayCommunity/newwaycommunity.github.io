@@ -1,0 +1,9 @@
+{
+  "name": "newwaycommunity",
+  "private": true,
+  "description": "New Way Community: site estático + backend do painel admin (Vercel Functions em api/)",
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

@@ -9,9 +9,6 @@ const FIREBASE_CONFIG = {
   measurementId: "G-NHBHRVZXXW"
 };
 
-const ADMIN_HASH = "#BlackArch98";
-
-
 const SECTIONS = ["Jogos Android", "GoldSrc Engine", "Source Engine", "Apps Premium"];
 (function populateAdminCategoryFilter(){
   const sel = document.getElementById('adminCategoryFilter');
@@ -29,7 +26,8 @@ const LINK_UPDATE_BADGE_DAYS = 3;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAnalytics, isSupported as analyticsIsSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  initializeAuth, indexedDBLocalPersistence, browserLocalPersistence,
+  signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc,
@@ -38,7 +36,8 @@ import {
 
 const app = initializeApp(FIREBASE_CONFIG);
 analyticsIsSupported().then(ok => { if(ok) getAnalytics(app); }).catch(()=>{});
-const auth = getAuth(app);
+// A sessão do painel continua depois de fechar o navegador, até vencer no servidor ou até tocar em Sair.
+const auth = initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
 const db = getFirestore(app);
 
 async function getDiscordWebhook(category){
@@ -73,22 +72,36 @@ async function getDiscordDiretoWebhook(category){
   }
 }
 
-async function sha256Hex(text){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+/* ===== Acesso ao painel: palavra-chave + login, tudo validado no backend (/api, Vercel Functions) =====
+   1) Palavra-chave na busca + Enter  ->  /api/admin-gate devolve um bilhete de uso único.
+   2) Login por e-mail e senha        ->  /api/admin-unlock troca o bilhete por uma sessão administrativa.
+   As regras do Firestore só aceitam escrita com essa sessão. Nada aqui decide quem é admin. */
+const API_CODES = { 401: 'unauthenticated', 403: 'permission-denied', 429: 'resource-exhausted' };
+const apiError = code => Object.assign(new Error(code), { code });
+async function api(name, body, withAuth){
+  const headers = { 'Content-Type': 'application/json' };
+  if(withAuth){
+    const u = auth.currentUser;
+    if(!u) throw apiError('unauthenticated');
+    headers.Authorization = 'Bearer ' + await u.getIdToken();
+  }
+  let res;
+  try{ res = await fetch('/api/' + name, { method: 'POST', headers, body: JSON.stringify(body || {}), cache: 'no-store', credentials: 'omit' }); }
+  catch{ throw apiError('unavailable'); }
+  let data = null;
+  try{ data = await res.json(); }catch{}
+  if(!res.ok) throw apiError(API_CODES[res.status] || 'internal');
+  return data || {};
 }
 
-let adminKeywordHash = null;
-async function loadAdminKeyword(){
-  try{
-    const docSnap = await getDoc(doc(db, "config", "admin"));
-    const data = docSnap.data();
-    adminKeywordHash = (data && data.keywordHash) ? data.keywordHash.trim().toLowerCase() : null;
-  }catch(err){
-    console.warn('Não foi possível carregar a palavra-chave do admin:', err);
-  }
-}
-loadAdminKeyword();
+let gateTicket = null;      // bilhete de uso único: fica só na memória da página, nunca em storage
+let adminOpen = false;      // o painel está aberto na tela
+let adminTimer = null;
+let authRun = 0;
+let justUnlocked = false;
+let loginBusy = false;
+let gateBusy = false;
+let loginDenied = false;
 
 let allGames = [];
 let genreDocs = [];
@@ -674,17 +687,25 @@ function startGamesListener(){
   });
 }
 
-document.getElementById('searchInput').addEventListener('input', async (e)=>{
-  const val = e.target.value.trim().toLowerCase();
-  if(adminKeywordHash && val){
-    const valHash = await sha256Hex(val);
-    if(valHash === adminKeywordHash){
-      e.target.value = '';
-      window.location.hash = ADMIN_HASH;
-      return;
-    }
-  }
-  renderGrid();
+document.getElementById('searchInput').addEventListener('input', ()=>{ renderGrid(); });
+
+/* Entrada discreta do painel: palavra-chave na busca + Enter, só quando nenhum jogo combina com o texto.
+   Nada é conferido aqui: o servidor decide. Se não bater, a busca segue normal, sem aviso nenhum. */
+document.getElementById('searchInput').addEventListener('keydown', async (e)=>{
+  if(e.key !== 'Enter' || gateBusy || !gamesLoaded) return;
+  const raw = e.target.value;
+  const term = raw.trim().toLowerCase();
+  if(term.length < 6 || raw.length > 200) return;
+  if(allGames.some(g => (g.name||'').toLowerCase().includes(term))) return;
+  gateBusy = true;
+  try{
+    const data = await api('admin-gate', { keyword: raw });
+    gateTicket = { t: data.ticket, e: data.expiresAt };
+    e.target.value = '';
+    renderGrid();
+    openAdminLogin();
+  }catch(err){ /* sem pista nenhuma para quem só está pesquisando */ }
+  finally{ gateBusy = false; }
 });
 
 function cardHtml(g){
@@ -1068,10 +1089,16 @@ let pendingDeepLinkId = null;
 function showAdmin(){
   document.getElementById('publicView').classList.add('hidden');
   document.getElementById('adminView').classList.remove('hidden');
+  if(!adminOpen){
+    adminOpen = true;
+    try{ history.pushState({ nwcAdmin: true }, ''); }catch(err){}   // o botão Voltar do celular fecha o painel
+  }
+  window.scrollTo(0, 0);
 }
 function showPublic(){
   document.getElementById('adminView').classList.add('hidden');
   document.getElementById('publicView').classList.remove('hidden');
+  adminOpen = false;
 }
 function openGameDeepLink(id){
   const g = allGames.find(x=>x.id===id);
@@ -1083,15 +1110,14 @@ function openGameDeepLink(id){
   renderGrid();
   openDetail(id);
 }
-document.getElementById('backToSiteBtn').onclick = ()=>{ window.location.hash = ''; };
+document.getElementById('backToSiteBtn').onclick = ()=>{
+  if(history.state && history.state.nwcAdmin){ history.back(); } else { showPublic(); }
+};
+window.addEventListener('popstate', ()=>{ if(adminOpen) showPublic(); });
 window.addEventListener('hashchange', routeCheck);
 function routeCheck(){
   const hash = window.location.hash;
-  if(hash === ADMIN_HASH){
-    showAdmin();
-    return;
-  }
-  showPublic();
+  if(!adminOpen) showPublic();
   if(hash.startsWith('#jogo=')){
     const id = idFromGameHash(hash);
     if(gamesLoaded) openGameDeepLink(id);
@@ -1099,33 +1125,176 @@ function routeCheck(){
   }
 }
 
+/* ---------- login em duas etapas ---------- */
+const AUTH_MSG = {
+  'auth/too-many-requests': 'Muitas tentativas. Espere alguns minutos e tente de novo.',
+  'auth/network-request-failed': 'Sem conexão. Confira a internet e tente de novo.',
+  'auth/user-disabled': 'Esta conta foi desativada.'
+};
+const UNLOCK_MSG = {
+  'resource-exhausted': 'Muitas tentativas. Espere um pouco e tente de novo.',
+  'unavailable': 'Sem conexão com o servidor. Confira a internet e tente de novo.'
+};
+function setLoginMsg(text, kind){
+  const msg = document.getElementById('loginMsg');
+  msg.innerHTML = text ? `<div class="msg ${kind || 'err'}">${escapeHtml(text)}</div>` : '';
+}
+function setLoginBusy(on, text){
+  loginBusy = on;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = on;
+  btn.textContent = on ? text : 'Entrar';
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function adminClaims(user){
+  const r = await user.getIdTokenResult();
+  const c = r.claims || {};
+  return { admin: c.admin === true, until: typeof c.adminUntil === 'number' ? c.adminUntil : 0 };
+}
+async function logoutAdmin(){
+  try{ await api('admin-logout', {}, true); }catch(err){}
+  try{ await signOut(auth); }catch(err){}
+}
+// Abre a tela do painel (mostra o login, ou o painel direto se já houver sessão administrativa).
+function openAdminLogin(){
+  setLoginMsg('');
+  showAdmin();
+  if(auth.currentUser) handleAuth(auth.currentUser);
+}
+
 document.getElementById('loginBtn').onclick = async ()=>{
+  if(loginBusy) return;
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
-  const msg = document.getElementById('loginMsg');
-  msg.innerHTML = '';
-  try{ await signInWithEmailAndPassword(auth, email, password); }
-  catch(err){ msg.innerHTML = `<div class="msg err">Não foi possível entrar. Confira e-mail e senha.</div>`; }
+  setLoginMsg('');
+  if(!gateTicket || gateTicket.e <= Date.now()){
+    gateTicket = null;
+    setLoginMsg('O acesso expirou. Digite a palavra-chave na busca do site de novo.');
+    setTimeout(()=>{ if(adminOpen && !auth.currentUser) showPublic(); }, 2200);
+    return;
+  }
+  if(!email || !password){ setLoginMsg('Preencha o e-mail e a senha.'); return; }
+  setLoginBusy(true, 'Entrando...');
+  try{
+    await signInWithEmailAndPassword(auth, email, password);
+    document.getElementById('loginPassword').value = '';
+    // onAuthStateChanged assume daqui e troca o bilhete pela sessão administrativa.
+  }catch(err){
+    setLoginBusy(false);
+    setLoginMsg(AUTH_MSG[err && err.code] || 'Não foi possível entrar. Confira e-mail e senha.');
+  }
 };
-document.getElementById('logoutBtn').onclick = ()=> signOut(auth);
+document.getElementById('logoutBtn').onclick = async ()=>{ await logoutAdmin(); showPublic(); };
 
-onAuthStateChanged(auth, (user)=>{
+/* Decide o que mostrar. Isto é só visual: quem libera ou nega leitura e escrita de verdade
+   são o backend e as regras do Firestore, que conferem o token e a sessão a cada operação. */
+async function handleAuth(user){
+  const mine = ++authRun;
   const loginBox = document.getElementById('loginBox');
   const dashBox = document.getElementById('dashboardBox');
   const returnBtn = document.getElementById('adminReturnBtn');
-  if(user){
-    loginBox.classList.add('hidden');
-    dashBox.classList.remove('hidden');
-    returnBtn.classList.remove('hidden');
-    renderAdminList();
-  }else{
+  const toLogin = ()=>{
     loginBox.classList.remove('hidden');
     dashBox.classList.add('hidden');
     returnBtn.classList.add('hidden');
     document.getElementById('gameFormOverlay').classList.add('hidden');
+  };
+  clearTimeout(adminTimer);
+
+  if(!user){
+    toLogin();
+    if(adminOpen && !gateTicket && !loginDenied) showPublic();   // sem bilhete não há o que fazer na tela de login
+    return;
   }
-});
-document.getElementById('adminReturnBtn').onclick = ()=>{ window.location.hash = ADMIN_HASH; };
+
+  let info = null;
+  try{ info = await adminClaims(user); }catch(err){}
+  if(mine !== authRun) return;
+
+  // Só e-mail e senha, sem sessão administrativa: troca o bilhete da palavra-chave pela sessão.
+  if(!info || !info.admin){
+    toLogin();
+    if(!gateTicket || gateTicket.e <= Date.now()){
+      gateTicket = null;
+      loginDenied = true;
+      setLoginBusy(false);
+      setLoginMsg('Acesso negado. Use a palavra-chave na busca do site.');
+      await logoutAdmin();
+      setTimeout(()=>{ loginDenied = false; if(adminOpen) showPublic(); }, 1800);
+      return;
+    }
+    const t = gateTicket.t;
+    gateTicket = null;                       // uso único
+    setLoginBusy(true, 'Verificando...');
+    justUnlocked = true;
+    try{
+      const data = await api('admin-unlock', { ticket: t }, true);
+      await signInWithCustomToken(auth, data.token);   // troca para o token com a sessão administrativa
+      handleAuth(auth.currentUser);                    // garante a atualização da tela mesmo sem novo evento do Firebase
+    }catch(err){
+      justUnlocked = false;
+      loginDenied = true;
+      setLoginBusy(false);
+      setLoginMsg(UNLOCK_MSG[err && err.code] || 'Acesso negado.');
+      await logoutAdmin();
+      setTimeout(()=>{ loginDenied = false; if(adminOpen) showPublic(); }, 1800);
+    }
+    return;
+  }
+
+  // Sessão administrativa vencida.
+  if(info.until <= Date.now()){
+    await logoutAdmin();
+    if(mine === authRun) showPublic();
+    return;
+  }
+
+  // Confirma no servidor que a sessão continua valendo (logout em outra aba, conta desativada).
+  try{ await api('admin-session', {}, true); }
+  catch(err){
+    if(mine !== authRun) return;
+    if(err && (err.code === 'permission-denied' || err.code === 'unauthenticated')){
+      await logoutAdmin();
+      if(mine === authRun) showPublic();
+      return;
+    }
+    // Falha de rede: segue; as regras do Firestore continuam mandando.
+  }
+  if(mine !== authRun) return;
+
+  if(justUnlocked){
+    justUnlocked = false;
+    setLoginMsg('Acesso autorizado. Abrindo o painel...', 'ok');
+    await sleep(700);
+    if(mine !== authRun) return;
+  }
+  setLoginBusy(false);
+  setLoginMsg('');
+  loginBox.classList.add('hidden');
+  dashBox.classList.remove('hidden');
+  returnBtn.classList.remove('hidden');      // botão para voltar ao painel sem digitar a palavra-chave
+  renderAdminList();
+  adminTimer = setTimeout(async ()=>{
+    await logoutAdmin();
+    showPublic();
+  }, Math.max(0, Math.min(info.until - Date.now(), 2147483000)));
+}
+onAuthStateChanged(auth, handleAuth);
+
+document.getElementById('adminReturnBtn').onclick = async ()=>{
+  try{
+    await api('admin-session', {}, true);   // o servidor confirma a sessão antes de abrir
+    showAdmin();
+  }catch(err){
+    if(err && (err.code === 'permission-denied' || err.code === 'unauthenticated')){
+      document.getElementById('adminReturnBtn').classList.add('hidden');
+      await logoutAdmin();
+      alert('Sua sessão terminou. Use a palavra-chave de novo.');
+    }else{
+      showAdmin();                          // sem conexão: abre mesmo assim; as regras seguem mandando
+    }
+  }
+};
 
 function setBtnIcon(btn, iconName, label){
   btn.innerHTML = `<span class="msi">${iconName}</span>`;
