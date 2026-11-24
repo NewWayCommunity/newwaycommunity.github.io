@@ -56,10 +56,15 @@ Site com tema roxo escuro e fundo espacial animado, sincronizado no Vercel, com 
 │   └── discord                 # verificação de domínio do Discord
 ├── api/                        # backend do painel (Vercel Functions)
 │   ├── _lib/core.js            # regras de acesso, limite de tentativas, sessões
+│   ├── _lib/catalog.js         # monta a cópia do catálogo
+│   ├── _lib/github.js          # leitura das Releases do GitHub
 │   ├── admin-gate.js           # palavra-chave -> bilhete de uso único
 │   ├── admin-unlock.js         # bilhete + login -> sessão administrativa
 │   ├── admin-session.js        # confirma a sessão no servidor
-│   └── admin-logout.js         # encerra a sessão
+│   ├── admin-logout.js         # encerra a sessão
+│   ├── github-sync.js          # confere Releases do GitHub uma vez por dia e atualiza a versão
+│   ├── catalog.js              # entrega o catálogo aos visitantes (com cache)
+│   └── catalog-rebuild.js      # refaz a cópia do catálogo (painel, agendamento ou Termux)
 ├── firebase/
 │   └── firestore.rules         # regras do Firestore (colar no console do Firebase)
 ├── tools/
@@ -97,6 +102,36 @@ Site com tema roxo escuro e fundo espacial animado, sincronizado no Vercel, com 
 3. **Firebase > Configurações do projeto > Contas de serviço > Gerar nova chave privada.** Na Vercel, em *Settings > Environment Variables*, crie `FIREBASE_SERVICE_ACCOUNT` com o conteúdo inteiro do `.json` e faça **Redeploy**. Nunca coloque esse arquivo no GitHub.
 4. Depois que o deploy estiver no ar, publique `firebase/firestore.rules` em *Firestore > Regras*.
 5. Apague o documento antigo `config/admin` (guardava o hash da palavra-chave antiga, que ficava legível por qualquer visitante).
+
+## 🔄 Versão automática pelo GitHub Releases
+
+Para jogos cujo desenvolvedor publica APKs no GitHub, o campo **Versão** pode se atualizar sozinho:
+
+1. No formulário do painel, coloque o endereço do GitHub no **Link 1** (por exemplo `https://github.com/dono/repositorio` ou o da página de Releases). Ao sair do campo, a **Versão** é preenchida pela última Release (e o **Tamanho**, se estiver vazio e a Release tiver um único APK).
+2. Uma vez por dia (09:00 UTC) a Vercel executa `api/github-sync.js`, que confere os jogos com **Link 1 do GitHub** e atualiza só o campo `version` quando sai uma Release nova. O resto da postagem não é tocado.
+
+Regras: vale a Release publicada mais recente (rascunhos são ignorados; pré-lançamentos entram). O "v" do começo da tag é tirado (`v4.3.0` vira `4.3.0`). Links encurtados não são lidos: use o do GitHub como Link 1 nesses jogos.
+
+**Configurar na Vercel** (*Settings > Environment Variables*, depois Redeploy):
+- `CRON_SECRET` (obrigatória): uma sequência aleatória de pelo menos 16 caracteres. Sem ela a função recusa tudo. A Vercel envia esse valor sozinha ao agendar.
+- `GITHUB_TOKEN` (**necessário com mais de ~50 repositórios**): token do GitHub só de leitura de repositórios públicos. Sem ele o GitHub limita a 60 consultas por hora; com ele, 5.000 por hora. Crie em *GitHub > Settings > Developer settings > Fine-grained tokens* (sem nenhuma permissão extra).
+
+**Capacidade:** a checagem foi feita para centenas de repositórios. Consulta 8 por vez, uma única vez por repositório (mesmo que vários jogos usem o mesmo), para antes de estourar o tempo da função (limite de 60 s configurado em `vercel.json`) e, se o GitHub limitar ou o tempo acabar, guarda onde parou (`adminConfig/githubSync`) e continua dali na execução seguinte. Com token, centenas de repositórios terminam numa execução só. Sem token, cada dia cobre cerca de 56 e a lista é percorrida em ciclos (200 repositórios levam 4 dias para ser conferidos por inteiro).
+
+Para rodar na hora (teste): `curl -s -H "Authorization: Bearer SEU_CRON_SECRET" https://newwaycommunity.vercel.app/api/github-sync`. A resposta traz só contagens (`repos`, `games`, `processed`, `complete`, `updated`, `failed`, `rateLimited`, `tokenMissing`).
+
+## ⚡ Catálogo em cópia (economia de leituras do Firestore)
+
+O plano gratuito do Firestore dá 50 mil leituras por dia. Antes, cada visita lia todos os jogos (e as listas de gêneros, devs e portadores) direto do Firestore; com centenas de jogos, poucas centenas de visitas esgotavam a cota. Agora:
+
+- **Visitantes** baixam `/api/catalog`, uma cópia pronta guardada no servidor (coleção `catalogSnapshot`, fechada para clientes). A Vercel mantém a resposta em cache por ~2 minutos para todo mundo, então o Firestore quase não é lido, não importa quantas pessoas visitem.
+- **Admins** usam as escutas ao vivo do Firestore **só quando abrem o painel**, para ver os dados em tempo real.
+- **A cópia é refeita** (a) ~20 segundos depois da última alteração feita no painel (várias alterações seguidas viram um pedido só; se a aba for fechada antes, o pedido sai na hora) e (b) todo dia, junto com a checagem de versões do GitHub.
+- **Se a cópia não existir ou a API cair**, o site volta sozinho a ler o Firestore como antes.
+- Uma alteração no painel aparece para os visitantes em até ~3 minutos.
+- O catálogo é dividido em partes de até ~600 KB, então cresce até milhares de jogos. A lista pública não leva os campos que só o painel usa (ids de mensagens do Discord e links guardados).
+
+**Primeira cópia (logo depois do deploy):** no Termux, `curl -s -X POST -H "Authorization: Bearer SEU_CRON_SECRET" https://newwaycommunity.vercel.app/api/catalog-rebuild` (resposta: `{"ok":true,"count":NNN,"parts":N}`). Ou, no painel, fixe e desafixe qualquer jogo e espere 20 segundos. Até lá o site continua funcionando pelo Firestore.
 
 ## ⚠️ Aviso
 

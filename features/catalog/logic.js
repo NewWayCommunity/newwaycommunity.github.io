@@ -30,8 +30,8 @@ import {
   signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc,
-  onSnapshot, serverTimestamp, writeBatch
+  getFirestore, collection, addDoc as fsAddDoc, updateDoc as fsUpdateDoc, deleteDoc as fsDeleteDoc, doc, getDoc,
+  onSnapshot, serverTimestamp, writeBatch as fsWriteBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
@@ -72,6 +72,40 @@ async function getDiscordDiretoWebhook(category){
   }
 }
 
+/* ===== Catálogo para visitantes: cópia pronta no servidor, em vez de ler o Firestore inteiro a cada visita =====
+   - Visitantes baixam /api/catalog (a Vercel guarda a resposta por uns minutos para todo mundo): custo ~zero no Firestore.
+   - Quem tem sessão de administrador usa as escutas ao vivo do Firestore, só quando abre o painel.
+   - Depois de salvar/apagar algo no painel, o servidor atualiza a cópia (uma vez, 20 s depois da última alteração).
+   - Se a cópia não existir ou a API falhar, o site volta sozinho a ler o Firestore, como antes. */
+let rebuildTimer = null;
+let rebuildToken = '';
+async function sendCatalogRebuild(keepalive){
+  try{
+    const token = rebuildToken || (auth.currentUser ? await auth.currentUser.getIdToken() : '');
+    if(!token) return;
+    await fetch('/api/catalog-rebuild', { method: 'POST', keepalive: !!keepalive, cache: 'no-store', credentials: 'omit', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: '{}' });
+  }catch(err){}
+}
+function scheduleCatalogRebuild(){
+  if(!auth.currentUser) return;
+  clearTimeout(rebuildTimer);
+  auth.currentUser.getIdToken().then(t => { rebuildToken = t; }).catch(()=>{});
+  rebuildTimer = setTimeout(()=>{ rebuildTimer = null; sendCatalogRebuild(false); }, 20000);
+}
+// Se o painel for fechado antes dos 20 s, envia na hora para a cópia não ficar desatualizada.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden' && rebuildTimer){ clearTimeout(rebuildTimer); rebuildTimer = null; sendCatalogRebuild(true); }
+});
+async function addDoc(...args){ const r = await fsAddDoc(...args); scheduleCatalogRebuild(); return r; }
+async function updateDoc(...args){ const r = await fsUpdateDoc(...args); scheduleCatalogRebuild(); return r; }
+async function deleteDoc(...args){ const r = await fsDeleteDoc(...args); scheduleCatalogRebuild(); return r; }
+function writeBatch(...args){
+  const b = fsWriteBatch(...args);
+  const commit = b.commit.bind(b);
+  b.commit = async ()=>{ const r = await commit(); scheduleCatalogRebuild(); return r; };
+  return b;
+}
+
 /* ===== Acesso ao painel: palavra-chave + login, tudo validado no backend (/api, Vercel Functions) =====
    1) Palavra-chave na busca + Enter  ->  /api/admin-gate devolve um bilhete de uso único.
    2) Login por e-mail e senha        ->  /api/admin-unlock troca o bilhete por uma sessão administrativa.
@@ -102,6 +136,8 @@ let justUnlocked = false;
 let loginBusy = false;
 let gateBusy = false;
 let loginDenied = false;
+let adminSessionActive = false;   // há sessão administrativa confirmada
+let liveStarted = false;          // escutas ao vivo do Firestore já abertas
 
 let allGames = [];
 let genreDocs = [];
@@ -661,19 +697,22 @@ function startPortsListener(){
   }, (err)=>{ console.error('Erro ao carregar ports:', err); });
 }
 
+function applyGames(list){
+  allGames = list;
+  gamesLoaded = true;
+  document.getElementById('adminLoadMsg').textContent = '';
+  renderSectionNav();
+  renderGrid();
+  renderAdminList();
+  if(pendingDeepLinkId){
+    const idToOpen = pendingDeepLinkId;
+    pendingDeepLinkId = null;
+    openGameDeepLink(idToOpen);
+  }
+}
 function startGamesListener(){
   onSnapshot(collection(db,'games'), (snap)=>{
-    allGames = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    gamesLoaded = true;
-    document.getElementById('adminLoadMsg').textContent = '';
-    renderSectionNav();
-    renderGrid();
-    renderAdminList();
-    if(pendingDeepLinkId){
-      const idToOpen = pendingDeepLinkId;
-      pendingDeepLinkId = null;
-      openGameDeepLink(idToOpen);
-    }
+    applyGames(snap.docs.map(d=>({id:d.id, ...d.data()})));
   }, (err)=>{
     console.error('Erro ao carregar jogos:', err);
     gamesLoaded = true;
@@ -1087,6 +1126,7 @@ document.getElementById('detailOverlay').addEventListener('click', (e)=>{
 
 let pendingDeepLinkId = null;
 function showAdmin(){
+  if(adminSessionActive) startLiveListeners();
   document.getElementById('publicView').classList.add('hidden');
   document.getElementById('adminView').classList.remove('hidden');
   if(!adminOpen){
@@ -1200,6 +1240,7 @@ async function handleAuth(user){
     document.getElementById('gameFormOverlay').classList.add('hidden');
   };
   clearTimeout(adminTimer);
+  adminSessionActive = false;
 
   if(!user){
     toLogin();
@@ -1270,6 +1311,8 @@ async function handleAuth(user){
   }
   setLoginBusy(false);
   setLoginMsg('');
+  adminSessionActive = true;
+  if(adminOpen) startLiveListeners();        // o painel usa os dados ao vivo do Firestore
   loginBox.classList.add('hidden');
   dashBox.classList.remove('hidden');
   returnBtn.classList.remove('hidden');      // botão para voltar ao painel sem digitar a palavra-chave
@@ -1494,6 +1537,80 @@ document.querySelectorAll('.link-del-btn').forEach(btn=>{
   });
 });
 
+/* ===== GitHub Releases: com um link do GitHub no Link 1, a versão vem da última Release =====
+   Usa os campos que já existem: o Link 1 guarda o endereço do repositório ou da Release, e a Versão
+   (e o Tamanho, se estiver vazio) são preenchidos a partir dela. O servidor também confere uma vez
+   por dia e atualiza a Versão sozinho quando sai uma Release nova (api/github-sync.js). */
+function parseGithubRepo(url){
+  let u;
+  try{ u = new URL(url); }catch(err){ return null; }
+  if(u.protocol !== 'https:' || (u.hostname !== 'github.com' && u.hostname !== 'www.github.com')) return null;
+  const parts = u.pathname.split('/').filter(Boolean);
+  if(parts.length < 2) return null;
+  const owner = parts[0];
+  const repo = parts[1].replace(/\.git$/i, '');
+  if(!/^[A-Za-z0-9_.-]{1,100}$/.test(owner) || !/^[A-Za-z0-9_.-]{1,100}$/.test(repo)) return null;
+  return { owner, repo };
+}
+function cleanReleaseVersion(tag){
+  return String(tag || '').trim().replace(/^[vV](?=\d)/, '').slice(0, 60);
+}
+function formatBytes(n){
+  if(!(n > 0)) return '';
+  const mb = n / 1048576;
+  if(mb < 1024) return Math.max(1, Math.round(mb)) + ' MB';
+  return (mb / 1024).toFixed(1).replace(/\.0$/, '') + ' GB';
+}
+const ghHint = document.createElement('div');
+ghHint.className = 'hint';
+ghHint.style.cssText = 'display:none;margin-top:6px;margin-bottom:10px;';
+document.getElementById('linkRowWrap1').insertAdjacentElement('afterend', ghHint);
+let ghRun = 0;
+let ghLastUrl = '';          // evita consultar o GitHub duas vezes pelo mesmo link (colar + sair do campo)
+function setGhHint(text){
+  ghHint.textContent = text || '';
+  ghHint.style.display = text ? 'block' : 'none';
+}
+function resetGhHint(){ ghRun++; ghLastUrl = ''; setGhHint(''); }
+async function fillFromGithubRelease(){
+  const url = document.getElementById('fLinkUrl1').value.trim();
+  const repo = parseGithubRepo(url);
+  if(!repo){ ghRun++; ghLastUrl = ''; setGhHint(''); return; }
+  if(url === ghLastUrl) return;
+  ghLastUrl = url;
+  const mine = ++ghRun;
+  setGhHint('Lendo a última Release do GitHub...');
+  try{
+    const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/releases?per_page=10`, { headers: { Accept: 'application/vnd.github+json' } });
+    if(mine !== ghRun) return;
+    if(res.status === 404){ ghLastUrl = ''; setGhHint('Repositório não encontrado ou sem Releases públicas. A versão continua manual.'); return; }
+    if(res.status === 403 || res.status === 429){ ghLastUrl = ''; setGhHint('O GitHub limitou as consultas por agora. Tente de novo em alguns minutos ou preencha a versão à mão.'); return; }
+    if(!res.ok) throw new Error('http ' + res.status);
+    const list = await res.json();
+    if(mine !== ghRun) return;
+    const rel = Array.isArray(list) ? list.find(r => r && !r.draft) : null;
+    if(!rel){ setGhHint('Esse repositório ainda não tem nenhuma Release publicada. A versão continua manual.'); return; }
+    const version = cleanReleaseVersion(rel.tag_name || rel.name);
+    if(!version){ setGhHint('A última Release não tem nome de versão. A versão continua manual.'); return; }
+    document.getElementById('fVersion').value = version;
+    const apks = (rel.assets || []).filter(a => /\.apk$/i.test((a && a.name) || ''));
+    const sizeInput = document.getElementById('fFileSize');
+    let sizeFilled = false;
+    if(apks.length === 1 && !sizeInput.value.trim()){
+      sizeInput.value = formatBytes(apks[0].size);
+      sizeFilled = true;
+    }
+    let msg = `Versão ${version}${sizeFilled ? ' e tamanho ' + sizeInput.value : ''} preenchida pela última Release do GitHub${rel.prerelease ? ' (pré-lançamento)' : ''}.`;
+    if(apks.length > 1) msg += ` Há ${apks.length} APKs nessa Release, então o tamanho não foi preenchido.`;
+    msg += ' O site confere Releases novas uma vez por dia e atualiza a versão sozinho.';
+    setGhHint(msg);
+  }catch(err){
+    if(mine === ghRun){ ghLastUrl = ''; setGhHint('Não consegui ler o GitHub agora. A versão continua manual.'); }
+  }
+}
+document.getElementById('fLinkUrl1').addEventListener('change', fillFromGithubRelease);
+document.getElementById('fLinkUrl1').addEventListener('paste', ()=> setTimeout(fillFromGithubRelease, 60));
+
 document.querySelectorAll('.arch-chip').forEach(chip=>{
   chip.addEventListener('click', ()=> chip.classList.toggle('active'));
 });
@@ -1654,6 +1771,7 @@ function restoreAllArchivedLinks(gameId){
 }
 
 function resetForm(){
+  resetGhHint();
   editingGameId = null;
   editingArchivedLinks = [];
   document.getElementById('fName').value = '';
@@ -1794,7 +1912,35 @@ document.getElementById('saveGameBtn').onclick = async ()=>{
 document.getElementById('sectionTitle').textContent = activeSection;
 renderSectionNav();
 routeCheck();
-startGenresListener();
-startDevsListener();
-startPortsListener();
-startGamesListener();
+
+function startLiveListeners(){
+  if(liveStarted) return;
+  liveStarted = true;
+  startGenresListener();
+  startDevsListener();
+  startPortsListener();
+  startGamesListener();
+}
+async function fetchCatalogPart(i){
+  const res = await fetch('/api/catalog?p=' + i);
+  if(!res.ok) throw new Error('catalogo ' + res.status);
+  return res.json();
+}
+async function loadCatalogFromServer(){
+  let first = await fetchCatalogPart(0);
+  const total = Number.isInteger(first.parts) && first.parts > 0 ? first.parts : 1;
+  let rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => fetchCatalogPart(i + 1)));
+  // Se a cópia foi atualizada no meio do download, as partes são de versões diferentes: baixa de novo uma vez.
+  if(rest.some(r => r.builtAt !== first.builtAt)){
+    first = await fetchCatalogPart(0);
+    rest = await Promise.all(Array.from({ length: (first.parts || 1) - 1 }, (_, i) => fetchCatalogPart(i + 1)));
+  }
+  const seen = new Set();
+  const games = [first, ...rest].flatMap(p => p.games || []).filter(g => g && g.id && !seen.has(g.id) && seen.add(g.id));
+  if(liveStarted) return;                  // um admin abriu o painel e já recebe os dados ao vivo
+  genreDocs = Array.isArray(first.genres) ? first.genres : [];
+  devByDocs = Array.isArray(first.devs) ? first.devs : [];
+  portByDocs = Array.isArray(first.ports) ? first.ports : [];
+  applyGames(games);
+}
+loadCatalogFromServer().catch(()=>{ startLiveListeners(); });   // sem cópia ou sem API: lê o Firestore, como antes

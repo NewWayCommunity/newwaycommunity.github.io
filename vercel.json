@@ -3,9 +3,39 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "redirects": [
-    { "source": "/README.md", "destination": "/", "permanent": false },
-    { "source": "/package.json", "destination": "/", "permanent": false },
-    { "source": "/tools/:path*", "destination": "/", "permanent": false },
-    { "source": "/firebase/:path*", "destination": "/", "permanent": false }
-  ]
+    {
+      "source": "/README.md",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/tools/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/firebase/:path*",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/github-sync",
+      "schedule": "0 9 * * *"
+    }
+  ],
+  "functions": {
+    "api/github-sync.js": {
+      "maxDuration": 60
+    },
+    "api/catalog-rebuild.js": {
+      "maxDuration": 30
+    }
+  }
 }

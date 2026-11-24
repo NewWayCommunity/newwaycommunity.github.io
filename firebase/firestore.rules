@@ -95,6 +95,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Cópia do catálogo para os visitantes: só o backend (Admin SDK) lê e grava. Esta regra é opcional,
+    // pois tudo que não está listado já fica fechado.
+    match /catalogSnapshot/{docId} {
+      allow read, write: if false;
+    }
+
     // Todo o resto fica fechado.
   }
 }
